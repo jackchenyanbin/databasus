@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { ClipboardHelper } from '../../../shared/lib/ClipboardHelper';
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function DbSizeCommands({ commands }: Props) {
+  const { t } = useTranslation();
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   return (
@@ -30,7 +32,7 @@ export function DbSizeCommands({ commands }: Props) {
         >
           <path d="M9 18l6-6-6-6" />
         </svg>
-        How to check DB size?
+        {t('billing.howCheckDbSize')}
       </summary>
 
       <div className="mt-2 space-y-1.5">
@@ -57,7 +59,7 @@ export function DbSizeCommands({ commands }: Props) {
                   copiedIndex === index ? 'bg-green-500' : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                {copiedIndex === index ? 'Copied!' : 'Copy'}
+                {copiedIndex === index ? t('billing.copied') : t('billing.copy')}
               </button>
             </div>
           </div>

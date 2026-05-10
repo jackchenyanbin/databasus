@@ -1,5 +1,6 @@
 import { Modal } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   type Database,
@@ -45,6 +46,7 @@ export const EditDatabaseSpecificDataComponent = ({
   isShowDbName = true,
   isRestoreMode = false,
 }: Props) => {
+  const { t } = useTranslation();
   const [isShowReadOnlyDialog, setIsShowReadOnlyDialog] = useState(false);
   const [editingDatabase, setEditingDatabase] = useState<Database>(database);
 
@@ -91,7 +93,7 @@ export const EditDatabaseSpecificDataComponent = ({
   if (isShowReadOnlyDialog) {
     return (
       <Modal
-        title="Create read-only user"
+        title={t('database.createReadOnlyTitle')}
         footer={<div />}
         open={isShowReadOnlyDialog}
         onCancel={() => setIsShowReadOnlyDialog(false)}

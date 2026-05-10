@@ -1,6 +1,7 @@
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { Button, Modal, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { IS_CLOUD } from '../../../constants';
 import { storageApi } from '../../../entity/storages';
@@ -28,6 +29,7 @@ export const StoragesComponent = ({
   isCanManageStorages,
 }: Props) => {
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [storages, setStorages] = useState<Storage[]>([]);
 
@@ -84,7 +86,7 @@ export const StoragesComponent = ({
 
   const addStorageButton = (
     <Button type="primary" className="mb-2 w-full" onClick={() => setIsShowAddStorage(true)}>
-      Add storage
+      {t('storage.add')}
     </Button>
   );
 
@@ -106,14 +108,13 @@ export const StoragesComponent = ({
               <div className="mb-3 rounded bg-yellow-50 p-3 shadow dark:bg-yellow-900/30">
                 <div className="mb-1 flex items-center gap-1.5 text-sm font-bold text-yellow-700 dark:text-yellow-400">
                   <ExclamationCircleOutlined />
-                  Self-hosted notice
+                  {t('storage.selfHostedNotice')}
                 </div>
 
                 <div className="text-sm !text-yellow-600 dark:!text-yellow-500">
-                  Do not forget to backup the storage itself as it contains all your backups.
-                  <br /> Or you can use cloud{"'"}s build-in{' '}
-                  <u>unlimited storage with double reservation</u>. We care about security,
-                  maintainance and 24x7 uptime
+                  {t('storage.selfHostedBody')}
+                  <br /> {t('storage.orYouCanUseCloud')}{' '}
+                  <u>{t('storage.unlimitedStorage')}</u>. {t('storage.cloudCareLine')}
                 </div>
 
                 <a
@@ -122,7 +123,7 @@ export const StoragesComponent = ({
                   rel="noreferrer"
                   className="mt-2 block w-full rounded-md !bg-green-600 px-4 py-1.5 text-center text-sm font-medium !text-white transition-colors hover:!bg-green-700 dark:!bg-green-700 dark:hover:!bg-green-800"
                 >
-                  Use cloud storage from $9
+                  {t('storage.useCloudFrom')}
                 </a>
               </div>
             )}
@@ -139,7 +140,7 @@ export const StoragesComponent = ({
             {storages.length < 5 && isCanManageStorages && addStorageButton}
 
             <div className="mx-3 text-center text-xs text-gray-500 dark:text-gray-400">
-              Storage - is a place where backups will be stored (local disk, S3, etc.)
+              {t('storage.tipLong')}
             </div>
           </div>
         )}
@@ -153,7 +154,7 @@ export const StoragesComponent = ({
                   onClick={() => updateSelectedStorageId(undefined)}
                   className="w-full"
                 >
-                  ← Back to storages
+                  {t('storage.backToList')}
                 </Button>
               </div>
             )}
@@ -186,14 +187,14 @@ export const StoragesComponent = ({
 
       {isShowAddStorage && (
         <Modal
-          title="Add storage"
+          title={t('storage.addStorage')}
           footer={<div />}
           open={isShowAddStorage}
           onCancel={() => setIsShowAddStorage(false)}
           maskClosable={false}
         >
           <div className="my-3 max-w-[250px] text-gray-500 dark:text-gray-400">
-            Storage - is a place where backups will be stored (local disk, S3, etc.)
+            {t('storage.tipLong')}
           </div>
 
           <EditStorageComponent

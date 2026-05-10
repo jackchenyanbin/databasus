@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { type Database, PostgresBackupType, PostgresqlVersion } from '../../../../entity/databases';
 
 interface Props {
@@ -14,59 +16,59 @@ const postgresqlVersionLabels = {
   [PostgresqlVersion.PostgresqlVersion18]: '18',
 };
 
-const backupTypeLabels: Record<string, string> = {
-  [PostgresBackupType.PG_DUMP]: 'Remote (logical)',
-  [PostgresBackupType.WAL_V1]: 'Agent (physical)',
-};
-
 export const ShowPostgreSqlSpecificDataComponent = ({ database }: Props) => {
+  const { t } = useTranslation();
   const backupType = database.postgresql?.backupType;
+  const backupTypeLabels: Record<string, string> = {
+    [PostgresBackupType.PG_DUMP]: t('database.backupTypePgDump'),
+    [PostgresBackupType.WAL_V1]: t('database.backupTypeWal'),
+  };
   const backupTypeLabel = backupType
     ? (backupTypeLabels[backupType] ?? backupType)
-    : 'Remote (pg_dump)';
+    : t('database.backupTypeDefault');
 
   const renderPgDumpDetails = () => (
     <>
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">PG version</div>
+        <div className="min-w-[150px]">{t('database.pgVersion')}</div>
         <div>
           {database.postgresql?.version ? postgresqlVersionLabels[database.postgresql.version] : ''}
         </div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px] break-all">Host</div>
+        <div className="min-w-[150px] break-all">{t('database.host')}</div>
         <div>{database.postgresql?.host || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Port</div>
+        <div className="min-w-[150px]">{t('database.port')}</div>
         <div>{database.postgresql?.port || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Username</div>
+        <div className="min-w-[150px]">{t('database.username')}</div>
         <div>{database.postgresql?.username || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Password</div>
+        <div className="min-w-[150px]">{t('database.password')}</div>
         <div>{'*************'}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">DB name</div>
+        <div className="min-w-[150px]">{t('database.dbNameShort')}</div>
         <div>{database.postgresql?.database || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Use HTTPS</div>
-        <div>{database.postgresql?.isHttps ? 'Yes' : 'No'}</div>
+        <div className="min-w-[150px]">{t('database.useHttps')}</div>
+        <div>{database.postgresql?.isHttps ? t('common.yes') : t('common.no')}</div>
       </div>
 
       {!!database.postgresql?.includeSchemas?.length && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Include schemas</div>
+          <div className="min-w-[150px]">{t('database.includeSchemas')}</div>
           <div>{database.postgresql.includeSchemas.join(', ')}</div>
         </div>
       )}
@@ -77,7 +79,7 @@ export const ShowPostgreSqlSpecificDataComponent = ({ database }: Props) => {
     <>
       {database.postgresql?.version && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">PG version</div>
+          <div className="min-w-[150px]">{t('database.pgVersion')}</div>
           <div>{postgresqlVersionLabels[database.postgresql.version]}</div>
         </div>
       )}
@@ -96,7 +98,7 @@ export const ShowPostgreSqlSpecificDataComponent = ({ database }: Props) => {
   return (
     <div>
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Backup type</div>
+        <div className="min-w-[150px]">{t('database.backupType')}</div>
         <div>{backupTypeLabel}</div>
       </div>
 

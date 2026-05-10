@@ -8,6 +8,7 @@ import {
 import { App, Button, Modal, Spin, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { Backup } from '../../../entity/backups';
 import { type Database, DatabaseType } from '../../../entity/databases';
@@ -64,6 +65,7 @@ const getRestorePayload = (database: Database, editingDatabase: Database) => {
 };
 
 export const RestoresComponent = ({ database, backup }: Props) => {
+  const { t } = useTranslation();
   const { message } = App.useApp();
 
   const [editingDatabase, setEditingDatabase] = useState<Database>(
@@ -145,13 +147,12 @@ export const RestoresComponent = ({ database, backup }: Props) => {
     return (
       <>
         <div className="my-5 text-sm">
-          Enter info of the database we will restore backup to.{' '}
-          <u>The empty database for restore should be created before the restore</u>. During the
-          restore, all the current data will be cleared
+          {t('restore.enterInfoPrefix')}
+          <u>{t('restore.emptyDbFirst')}</u>
+          {t('restore.clearDataDuringRestore')}
           <br />
           <br />
-          Make sure the database is not used right now (most likely you do not want to restore the
-          data to the same DB where the backup was made)
+          {t('restore.notUsedWarn')}
         </div>
 
         <EditDatabaseSpecificDataComponent
@@ -159,7 +160,7 @@ export const RestoresComponent = ({ database, backup }: Props) => {
           onCancel={() => setIsShowRestore(false)}
           isShowBackButton={false}
           onBack={() => setIsShowRestore(false)}
-          saveButtonText="Restore to this DB"
+          saveButtonText={t('restore.restoreToThisDb')}
           isSaveToApi={false}
           onSaved={(database) => {
             setEditingDatabase({ ...database });
@@ -186,11 +187,11 @@ export const RestoresComponent = ({ database, backup }: Props) => {
             loading={isRestoreInProgress}
             onClick={() => setIsShowRestore(true)}
           >
-            Select database to restore to
+            {t('restore.selectDbToRestore')}
           </Button>
 
           {restores.length === 0 && (
-            <div className="my-5 text-center text-gray-400">No restores yet</div>
+            <div className="my-5 text-center text-gray-400">{t('restore.noRestoresYet')}</div>
           )}
 
           <div className="mt-5">
@@ -215,10 +216,10 @@ export const RestoresComponent = ({ database, backup }: Props) => {
                 <div key={restore.id} className="mb-1 rounded border border-gray-200 p-3 text-sm">
                   <div className="mb-1 flex items-center justify-between">
                     <div className="flex flex-1">
-                      <div className="w-[75px] min-w-[75px]">Status</div>
+                      <div className="w-[75px] min-w-[75px]">{t('restore.status')}</div>
 
                       {restore.status === RestoreStatus.FAILED && (
-                        <Tooltip title="Click to see error details">
+                        <Tooltip title={t('restore.clickSeeErrDetails')}>
                           <div
                             className="flex cursor-pointer items-center text-red-600 underline"
                             onClick={() => setShowingRestoreError(restore)}
@@ -228,7 +229,7 @@ export const RestoresComponent = ({ database, backup }: Props) => {
                               style={{ fontSize: 16, color: '#ff0000' }}
                             />
 
-                            <div>Failed</div>
+                            <div>{t('restore.failedText')}</div>
                           </div>
                         </Tooltip>
                       )}
@@ -240,7 +241,7 @@ export const RestoresComponent = ({ database, backup }: Props) => {
                             style={{ fontSize: 16, color: '#008000' }}
                           />
 
-                          <div>Successful</div>
+                          <div>{t('restore.successfulText')}</div>
                         </div>
                       )}
 
@@ -251,14 +252,14 @@ export const RestoresComponent = ({ database, backup }: Props) => {
                             style={{ fontSize: 16, color: '#808080' }}
                           />
 
-                          <div>Canceled</div>
+                          <div>{t('restore.canceledText')}</div>
                         </div>
                       )}
 
                       {restore.status === RestoreStatus.IN_PROGRESS && (
                         <div className="flex items-center font-bold text-blue-600">
                           <SyncOutlined spin />
-                          <span className="ml-2">In progress</span>
+                          <span className="ml-2">{t('restore.inProgressText')}</span>
                         </div>
                       )}
                     </div>
@@ -268,7 +269,7 @@ export const RestoresComponent = ({ database, backup }: Props) => {
                         {cancellingRestoreId === restore.id ? (
                           <SyncOutlined spin style={{ fontSize: 16 }} />
                         ) : (
-                          <Tooltip title="Cancel restore">
+                          <Tooltip title={t('restore.cancelRestoreTip')}>
                             <CloseCircleOutlined
                               className="cursor-pointer"
                               onClick={() => {
@@ -289,7 +290,7 @@ export const RestoresComponent = ({ database, backup }: Props) => {
                   </div>
 
                   <div className="mb-1 flex">
-                    <div className="w-[75px] min-w-[75px]">Started at</div>
+                    <div className="w-[75px] min-w-[75px]">{t('restore.startedAt')}</div>
                     <div>
                       {dayjs.utc(restore.createdAt).local().format(getUserTimeFormat().format)} (
                       {dayjs.utc(restore.createdAt).local().fromNow()})
@@ -298,16 +299,14 @@ export const RestoresComponent = ({ database, backup }: Props) => {
 
                   {restore.status === RestoreStatus.IN_PROGRESS && (
                     <div className="flex">
-                      <div className="w-[75px] min-w-[75px]">Duration</div>
+                      <div className="w-[75px] min-w-[75px]">{t('restore.duration')}</div>
                       <div>
                         <div>{duration}</div>
                         <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                          Expected restoration time usually 3x-5x longer than the backup duration
-                          (sometimes less, sometimes more depending on data type)
+                          {t('restore.expectedHint')}
                           <br />
                           <br />
-                          So it is expected to take up to {expectedRestoreDuration} (usually
-                          significantly faster)
+                          {t('restore.expectedUpTo', { duration: expectedRestoreDuration })}
                         </div>
                       </div>
                     </div>
@@ -321,7 +320,7 @@ export const RestoresComponent = ({ database, backup }: Props) => {
 
       {showingRestoreError && (
         <Modal
-          title="Restore error details"
+          title={t('restore.errorDetailsTitle')}
           open={!!showingRestoreError}
           onCancel={() => setShowingRestoreError(undefined)}
           maskClosable={false}
@@ -330,18 +329,16 @@ export const RestoresComponent = ({ database, backup }: Props) => {
               icon={<CopyOutlined />}
               onClick={() => {
                 ClipboardHelper.copyToClipboard(showingRestoreError.failMessage || '');
-                message.success('Error message copied to clipboard');
+                message.success(t('restore.errorCopied'));
               }}
             >
-              Copy
+              {t('restore.copy')}
             </Button>
           }
         >
           {showingRestoreError.failMessage?.includes('must be owner of extension') && (
             <div className="mb-4 rounded border border-yellow-300 bg-yellow-50 p-3 text-sm dark:border-yellow-600 dark:bg-yellow-900/30">
-              <strong>💡 Tip:</strong> This error typically occurs when restoring to managed
-              PostgreSQL services (like Yandex Cloud, AWS RDS or similar). Try enabling{' '}
-              <strong>&quot;Exclude extensions&quot;</strong> in Advanced settings before restoring.
+              {t('restore.extensionsTipPrefix')}
             </div>
           )}
           <div className="overflow-y-auto text-sm whitespace-pre-wrap" style={{ height: '400px' }}>
@@ -363,8 +360,8 @@ export const RestoresComponent = ({ database, backup }: Props) => {
             setShowCancelConfirmation(false);
             setRestoreToCancelId(undefined);
           }}
-          description="<strong>⚠️ Warning:</strong> Cancelling this restore will likely leave your database in a corrupted or incomplete state. You will need to recreate the database before attempting another restore.<br/><br/>Are you sure you want to cancel?"
-          actionText="Yes, cancel restore"
+          description={t('restore.cancelWarning')}
+          actionText={t('restore.yesCancelRestore')}
           actionButtonColor="red"
         />
       )}

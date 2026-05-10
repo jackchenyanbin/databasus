@@ -1,5 +1,6 @@
 import { Button, Modal, Select, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type Database, databaseApi } from '../../../../entity/databases';
 import { type Notifier, notifierApi } from '../../../../entity/notifiers';
@@ -36,6 +37,7 @@ export const EditDatabaseNotifiersComponent = ({
   isSaveToApi,
   onSaved,
 }: Props) => {
+  const { t } = useTranslation();
   const [editingDatabase, setEditingDatabase] = useState<Database>();
   const [isUnsaved, setIsUnsaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -95,14 +97,14 @@ export const EditDatabaseNotifiersComponent = ({
   return (
     <div>
       <div className="mb-5 max-w-[275px] text-gray-500 dark:text-gray-400">
-        Notifier - is a place where notifications will be sent (email, Slack, Telegram, etc.)
+        {t('database.notifierTipShort')}
         <br />
         <br />
-        You can select several notifiers, notifications will be sent to all of them.
+        {t('database.notifierTipMulti')}
       </div>
 
       <div className="mb-5 flex w-full items-center">
-        <div className="min-w-[150px]">Notifiers</div>
+        <div className="min-w-[150px]">{t('database.notifiers')}</div>
 
         <Select
           key={notifierSelectKey}
@@ -125,22 +127,22 @@ export const EditDatabaseNotifiersComponent = ({
           className="max-w-[200px] grow"
           options={[
             ...notifiers.map((n) => ({ label: n.name, value: n.id })),
-            { label: 'Create new notifier', value: 'create-new-notifier' },
+            { label: t('database.createNewNotifier'), value: 'create-new-notifier' },
           ]}
-          placeholder="Select notifiers"
+          placeholder={t('database.selectNotifiersShort')}
         />
       </div>
 
       <div className="mt-5 flex">
         {isShowCancelButton && (
           <Button className="mr-1" danger ghost onClick={() => onCancel()}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         )}
 
         {isShowBackButton && (
           <Button className="mr-auto" type="primary" ghost onClick={() => onBack()}>
-            Back
+            {t('common.back')}
           </Button>
         )}
 
@@ -152,14 +154,14 @@ export const EditDatabaseNotifiersComponent = ({
             disabled={isSaving}
             className="mr-5"
           >
-            {saveButtonText || 'Save'}
+            {saveButtonText || t('common.save')}
           </Button>
         )}
       </div>
 
       {isShowCreateNotifier && (
         <Modal
-          title="Add notifier"
+          title={t('database.addNotifierTitle')}
           footer={<div />}
           open={isShowCreateNotifier}
           onCancel={() => {
@@ -169,7 +171,7 @@ export const EditDatabaseNotifiersComponent = ({
           maskClosable={false}
         >
           <div className="my-3 max-w-[275px] text-gray-500 dark:text-gray-400">
-            Notifier - is a place where notifications will be sent (email, Slack, Telegram, etc.)
+            {t('database.notifierTipShort')}
           </div>
 
           <EditNotifierComponent

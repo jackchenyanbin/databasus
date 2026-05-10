@@ -1,6 +1,7 @@
 import { LoadingOutlined, MenuOutlined } from '@ant-design/icons';
 import { App, Button, Spin, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { APP_VERSION, CONTAINER_ARCH, IS_CLOUD } from '../../constants';
 import { type DiskUsage, diskApi } from '../../entity/disk';
@@ -23,6 +24,7 @@ import {
   WorkspaceSettingsComponent,
 } from '../../features/workspaces';
 import { useIsMobile, useScreenHeight } from '../../shared/hooks';
+import { LanguageToggleComponent } from '../../shared/ui/LanguageToggleComponent';
 import { StarButtonComponent } from '../../shared/ui/StarButtonComponent';
 import { ThemeToggleComponent } from '../../shared/ui/ThemeToggleComponent';
 import { SidebarComponent } from './SidebarComponent';
@@ -30,6 +32,7 @@ import { WorkspaceSelectionComponent } from './WorkspaceSelectionComponent';
 
 export const MainScreenComponent = () => {
   const { message } = App.useApp();
+  const { t } = useTranslation();
   const screenHeight = useScreenHeight();
   const isMobile = useIsMobile();
   const contentHeight = screenHeight - (isMobile ? 70 : 95);
@@ -120,7 +123,7 @@ export const MainScreenComponent = () => {
 
   const tabs = [
     {
-      text: 'Databases',
+      text: t('nav.databases'),
       name: 'databases',
       icon: '/icons/menu/database-gray.svg',
       selectedIcon: '/icons/menu/database-white.svg',
@@ -130,7 +133,7 @@ export const MainScreenComponent = () => {
       isVisible: true,
     },
     {
-      text: 'Storages',
+      text: t('nav.storages'),
       name: 'storages',
       icon: '/icons/menu/storage-gray.svg',
       selectedIcon: '/icons/menu/storage-white.svg',
@@ -140,7 +143,7 @@ export const MainScreenComponent = () => {
       isVisible: !!selectedWorkspace,
     },
     {
-      text: 'Notifiers',
+      text: t('nav.notifiers'),
       name: 'notifiers',
       icon: '/icons/menu/notifier-gray.svg',
       selectedIcon: '/icons/menu/notifier-white.svg',
@@ -150,7 +153,7 @@ export const MainScreenComponent = () => {
       isVisible: !!selectedWorkspace,
     },
     {
-      text: 'Settings',
+      text: t('nav.settings'),
       name: 'settings',
       icon: '/icons/menu/workspace-settings-gray.svg',
       selectedIcon: '/icons/menu/workspace-settings-white.svg',
@@ -160,7 +163,7 @@ export const MainScreenComponent = () => {
       isVisible: !!selectedWorkspace,
     },
     {
-      text: 'Profile',
+      text: t('nav.profile'),
       name: 'profile',
       icon: '/icons/menu/profile-gray.svg',
       selectedIcon: '/icons/menu/profile-white.svg',
@@ -170,7 +173,7 @@ export const MainScreenComponent = () => {
       isVisible: true,
     },
     {
-      text: 'Databasus settings',
+      text: t('nav.databasusSettings'),
       name: 'databasus-settings',
       icon: '/icons/menu/global-settings-gray.svg',
       selectedIcon: '/icons/menu/global-settings-white.svg',
@@ -180,7 +183,7 @@ export const MainScreenComponent = () => {
       isVisible: true,
     },
     {
-      text: 'Users',
+      text: t('nav.users'),
       name: 'users',
       icon: '/icons/menu/user-card-gray.svg',
       selectedIcon: '/icons/menu/user-card-white.svg',
@@ -218,7 +221,7 @@ export const MainScreenComponent = () => {
             target="_blank"
             rel="noreferrer"
           >
-            Docs
+            {t('nav.docs')}
           </a>
 
           <a
@@ -227,19 +230,19 @@ export const MainScreenComponent = () => {
             target="_blank"
             rel="noreferrer"
           >
-            Community
+            {t('nav.community')}
           </a>
 
           {!IS_CLOUD && (
-            <Tooltip title="99.9% uptime, 2x backup copies">
+            <Tooltip title={t('nav.cloudTooltip')}>
               <a
                 className="flex items-center gap-2 !text-black hover:opacity-80 dark:!text-gray-200"
                 href="https://databasus.com/cloud"
                 target="_blank"
                 rel="noreferrer"
               >
-                Cloud
-                <span className="relative flex h-2 w-2" aria-label="99.9% uptime, 2 backup copies">
+                {t('nav.cloud')}
+                <span className="relative flex h-2 w-2" aria-label={t('nav.cloudTooltip')}>
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
                 </span>
@@ -248,21 +251,27 @@ export const MainScreenComponent = () => {
           )}
 
           {isUsedMoreThan85Percent && (
-            <Tooltip title="To make backups locally and restore them, you need to have enough space on your disk. For restore, you need to have same amount of space that the backup size.">
+            <Tooltip title={t('nav.diskUsageTooltip')}>
               <div
                 className={`cursor-pointer text-center text-xs ${isUsedMoreThan95Percent ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}
               >
-                {(diskUsage.usedSpaceBytes / 1024 ** 3).toFixed(1)} of{' '}
-                {(diskUsage.totalSpaceBytes / 1024 ** 3).toFixed(1)} GB
-                <br />
-                ROM used (
-                {((diskUsage.usedSpaceBytes / diskUsage.totalSpaceBytes) * 100).toFixed(1)}%)
+                {t('nav.diskRomUsed', {
+                  used: (diskUsage.usedSpaceBytes / 1024 ** 3).toFixed(1),
+                  total: (diskUsage.totalSpaceBytes / 1024 ** 3).toFixed(1),
+                  percent: ((diskUsage.usedSpaceBytes / diskUsage.totalSpaceBytes) * 100).toFixed(1),
+                })
+                  .split('\n')
+                  .map((line, idx) => (
+                    <div key={idx}>{line}</div>
+                  ))}
               </div>
             </Tooltip>
           )}
 
           <div className="flex items-center gap-2">
             <StarButtonComponent />
+
+            <LanguageToggleComponent />
 
             <ThemeToggleComponent />
           </div>
@@ -329,7 +338,7 @@ export const MainScreenComponent = () => {
                       onClick={handleCreateWorkspace}
                       className="border-blue-600 bg-blue-600 hover:border-blue-700 hover:bg-blue-700"
                     >
-                      Create workspace
+                      {t('workspace.createWorkspace')}
                     </Button>
                   </div>
                 </div>

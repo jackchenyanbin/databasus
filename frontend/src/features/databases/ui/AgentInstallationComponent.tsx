@@ -1,6 +1,7 @@
 import { CopyOutlined } from '@ant-design/icons';
 import { App, Button, Modal, Tooltip } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { getApplicationServer } from '../../../constants';
 import { type Database, databaseApi } from '../../../entity/databases';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export const AgentInstallationComponent = ({ database, onTokenGenerated }: Props) => {
+  const { t } = useTranslation();
   const { message } = App.useApp();
 
   const [selectedArch, setSelectedArch] = useState<Architecture>('amd64');
@@ -30,7 +32,7 @@ export const AgentInstallationComponent = ({ database, onTokenGenerated }: Props
       const result = await databaseApi.regenerateAgentToken(database.id);
       setGeneratedToken(result.token);
     } catch {
-      message.error('Failed to generate token');
+      message.error(t('database.tokenGenFailed'));
     } finally {
       setIsGenerating(false);
     }
@@ -44,9 +46,9 @@ export const AgentInstallationComponent = ({ database, onTokenGenerated }: Props
   const copyToClipboard = async (text: string) => {
     try {
       await ClipboardHelper.copyToClipboard(text);
-      message.success('Copied to clipboard');
+      message.success(t('database.copiedToClipboard'));
     } catch {
-      message.error('Failed to copy');
+      message.error(t('database.copyFailed'));
     }
   };
 
@@ -55,7 +57,7 @@ export const AgentInstallationComponent = ({ database, onTokenGenerated }: Props
       <pre className="rounded-md bg-gray-900 p-4 pr-10 font-mono text-sm break-all whitespace-pre-wrap text-gray-100">
         {code}
       </pre>
-      <Tooltip title="Copy">
+      <Tooltip title={t('common.copy')}>
         <button
           className="absolute top-2 right-2 cursor-pointer rounded p-1 text-gray-400 hover:text-white"
           onClick={() => copyToClipboard(code)}
@@ -352,14 +354,14 @@ chown postgres:postgres /wal-queue`)}
 
   return (
     <div className="min-w-0 rounded-tr-md rounded-br-md rounded-bl-md bg-white p-3 shadow md:p-5 dark:bg-gray-800">
-      <h2 className="text-lg font-bold md:text-xl dark:text-white">Agent installation</h2>
+      <h2 className="text-lg font-bold md:text-xl dark:text-white">{t('database.agentInstallation')}</h2>
 
       <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
-        <span className="mr-1">Database ID:</span>
+        <span className="mr-1">{t('database.databaseId')}:</span>
         <code className="rounded bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-700">
           {database.id}
         </code>
-        <Tooltip title="Copy">
+        <Tooltip title={t('common.copy')}>
           <button
             className="ml-1 cursor-pointer rounded p-1 text-gray-400 hover:text-gray-700 dark:hover:text-white"
             onClick={() => copyToClipboard(database.id)}
@@ -370,17 +372,16 @@ chown postgres:postgres /wal-queue`)}
       </div>
 
       <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        WAL backup mode requires the Databasus agent to be installed on the server where PostgreSQL
-        runs. Follow the steps below to set it up.
+        {t('database.agentIntro')}
       </p>
 
       <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
-        Requires PostgreSQL 15 or newer.
+        {t('database.agentPgRequired')}
       </p>
 
       <div className="mt-5">
         <div className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-          Architecture
+          {t('database.architecture')}
         </div>
         <div className="flex">
           {renderTabButton('amd64', selectedArch === 'amd64', () => setSelectedArch('amd64'))}
@@ -390,65 +391,62 @@ chown postgres:postgres /wal-queue`)}
 
       <div className="mt-4">
         <div className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-          PostgreSQL installation type
+          {t('database.pgInstallType')}
         </div>
         <div className="flex">
-          {renderTabButton('System-wide', pgDeploymentType === 'system', () =>
+          {renderTabButton(t('database.pgInstallSystem'), pgDeploymentType === 'system', () =>
             setPgDeploymentType('system'),
           )}
-          {renderTabButton('Specific folder', pgDeploymentType === 'folder', () =>
+          {renderTabButton(t('database.pgInstallFolder'), pgDeploymentType === 'folder', () =>
             setPgDeploymentType('folder'),
           )}
-          {renderTabButton('Docker', pgDeploymentType === 'docker', () =>
+          {renderTabButton(t('database.pgInstallDocker'), pgDeploymentType === 'docker', () =>
             setPgDeploymentType('docker'),
           )}
         </div>
         <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {pgDeploymentType === 'system' &&
-            'pg_basebackup is available in the system PATH (default PostgreSQL install)'}
-          {pgDeploymentType === 'folder' &&
-            'pg_basebackup is in a specific directory (e.g. /usr/lib/postgresql/17/bin)'}
-          {pgDeploymentType === 'docker' && 'PostgreSQL runs inside a Docker container'}
+          {pgDeploymentType === 'system' && t('database.pgInstallSystemDesc')}
+          {pgDeploymentType === 'folder' && t('database.pgInstallFolderDesc')}
+          {pgDeploymentType === 'docker' && t('database.pgInstallDockerDesc')}
         </div>
       </div>
 
       <div className="mt-6">
-        <div className="font-semibold dark:text-white">Agent token</div>
+        <div className="font-semibold dark:text-white">{t('database.agentToken')}</div>
         {database.isAgentTokenGenerated ? (
           <div className="mt-2">
             <p className="mb-2 text-sm text-amber-600 dark:text-amber-400">
-              A token has already been generated. Regenerating will invalidate the existing one.
+              {t('database.agentTokenExists')}
             </p>
             <Button danger loading={isGenerating} onClick={handleGenerateToken}>
-              Regenerate token
+              {t('database.regenerateToken')}
             </Button>
           </div>
         ) : (
           <div className="mt-2">
             <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-              Generate a token the agent will use to authenticate with Databasus.
+              {t('database.agentTokenNew')}
             </p>
             <Button type="primary" loading={isGenerating} onClick={handleGenerateToken}>
-              Generate token
+              {t('database.generateToken')}
             </Button>
           </div>
         )}
       </div>
 
       <Modal
-        title="Agent Token"
+        title={t('database.agentTokenModal')}
         open={generatedToken !== null}
         onCancel={handleTokenModalClose}
         footer={
           <Button type="primary" onClick={handleTokenModalClose}>
-            I&apos;ve saved the token
+            {t('database.tokenSaved')}
           </Button>
         }
       >
         {renderCodeBlock(generatedToken ?? '')}
         <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
-          This token will only be shown once. Store it securely — you won&apos;t be able to retrieve
-          it again.
+          {t('database.tokenOnce')}
         </p>
       </Modal>
 

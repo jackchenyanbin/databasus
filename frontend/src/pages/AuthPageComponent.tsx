@@ -1,6 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { IS_CLOUD } from '../constants';
 import { userApi } from '../entity/users';
@@ -15,6 +16,7 @@ import {
 import { useScreenHeight } from '../shared/hooks';
 
 export function AuthPageComponent() {
+  const { t } = useTranslation();
   const [isAdminHasPassword, setIsAdminHasPassword] = useState(false);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp' | 'requestReset' | 'resetPassword'>(
     'signUp',
@@ -33,7 +35,7 @@ export function AuthPageComponent() {
         setLoading(false);
       })
       .catch((e) => {
-        alert('Failed to check admin password status: ' + (e as Error).message);
+        alert(t('auth.checkAdminPasswordError') + (e as Error).message);
       });
   };
 
@@ -93,7 +95,7 @@ export function AuthPageComponent() {
             className="underline"
             style={{ color: 'inherit' }}
           >
-            Terms of Use
+            {t('auth.termsOfUse')}
           </a>
           {' | '}
           <a
@@ -103,10 +105,10 @@ export function AuthPageComponent() {
             className="underline"
             style={{ color: 'inherit' }}
           >
-            Privacy Policy
+            {t('auth.privacyPolicy')}
           </a>
           {' | '}
-          info@databasus.com | &copy; 2026 Databasus. All rights reserved.
+          {t('auth.copyright', { year: new Date().getFullYear() })}
         </footer>
       )}
     </div>

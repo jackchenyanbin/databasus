@@ -3,6 +3,7 @@ import { App, Spin, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { AuditLog } from '../../../entity/audit-logs/model/AuditLog';
 import { workspaceApi } from '../../../entity/workspaces/api/workspaceApi';
@@ -18,6 +19,7 @@ export function WorkspaceAuditLogsComponent({
   workspaceId,
   scrollContainerRef: externalScrollRef,
 }: Props) {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const isMobile = useIsMobile();
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -80,7 +82,7 @@ export function WorkspaceAuditLogsComponent({
       setHasMore(response.auditLogs.length === pageSize);
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Failed to load workspace audit logs';
+        error instanceof Error ? error.message : t('workspace.wsAuditLoadFailed');
       message.error(errorMessage);
     } finally {
       loadingRef.current = false;
@@ -105,14 +107,14 @@ export function WorkspaceAuditLogsComponent({
 
   const columns: ColumnsType<AuditLog> = [
     {
-      title: 'User',
+      title: t('audit.columnUser'),
       key: 'user',
       width: 300,
       render: (_, record: AuditLog) => {
         if (!record.userEmail && !record.userName) {
           return (
             <span className="inline-block rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-              System
+              {t('audit.system')}
             </span>
           );
         }
@@ -129,7 +131,7 @@ export function WorkspaceAuditLogsComponent({
       },
     },
     {
-      title: 'Message',
+      title: t('audit.columnMessage'),
       dataIndex: 'message',
       key: 'message',
       render: (message: string) => (
@@ -137,7 +139,7 @@ export function WorkspaceAuditLogsComponent({
       ),
     },
     {
-      title: 'Created',
+      title: t('audit.columnCreated'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 250,
@@ -161,7 +163,7 @@ export function WorkspaceAuditLogsComponent({
       if (!log.userEmail && !log.userName) {
         return (
           <span className="inline-block rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-            System
+            {t('audit.system')}
           </span>
         );
       }
@@ -199,12 +201,12 @@ export function WorkspaceAuditLogsComponent({
   return (
     <div className="max-w-[1200px]">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Audit logs</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('workspace.wsAuditTitle')}</h2>
         <div className="text-sm text-gray-500 dark:text-gray-400">
           {isLoading ? (
             <Spin indicator={<LoadingOutlined spin />} />
           ) : (
-            `${auditLogs.length} of ${total} logs`
+            t('audit.countOfTotal', { count: auditLogs.length, total })
           )}
         </div>
       </div>
@@ -215,7 +217,7 @@ export function WorkspaceAuditLogsComponent({
         </div>
       ) : auditLogs.length === 0 ? (
         <div className="flex h-32 items-center justify-center text-gray-500 dark:text-gray-400">
-          No audit logs found for this workspace.
+          {t('workspace.wsAuditNoLogs')}
         </div>
       ) : (
         <>
@@ -236,14 +238,14 @@ export function WorkspaceAuditLogsComponent({
             <div className="flex justify-center py-4">
               <Spin indicator={<LoadingOutlined spin />} />
               <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                Loading more logs...
+                {t('audit.loadingMore')}
               </span>
             </div>
           )}
 
           {!hasMore && auditLogs.length > 0 && (
             <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-              All logs loaded ({auditLogs.length} total)
+              {t('audit.allLogsLoaded', { total: auditLogs.length })}
             </div>
           )}
         </>

@@ -1,5 +1,6 @@
 import { Button, Modal, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { usePurchaseFlow } from '../hooks/usePurchaseFlow';
 
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function PurchaseComponent({ databaseId, onSubscriptionChanged, onClose }: Props) {
+  const { t } = useTranslation();
   const flow = usePurchaseFlow({ databaseId, onSubscriptionChanged, onClose });
 
   const [storageSliderPos, setStorageSliderPos] = useState(0);
@@ -65,9 +67,9 @@ export function PurchaseComponent({ databaseId, onSubscriptionChanged, onClose }
 
   const modalTitle = isPurchaseFlow
     ? subscription.status === SubscriptionStatus.Canceled
-      ? 'Re-subscribe'
-      : 'Purchase subscription'
-    : 'Change Storage';
+      ? t('billing.reSubscribe')
+      : t('billing.purchaseSubscription')
+    : t('billing.changeStorageTitle');
 
   const isShowingForm =
     subscription &&
@@ -99,22 +101,22 @@ export function PurchaseComponent({ databaseId, onSubscriptionChanged, onClose }
       {flow.isWaitingForPayment && (
         <div className="flex flex-col items-center gap-4 py-10">
           <Spin size="large" />
-          <p className="text-gray-500 dark:text-gray-400">Confirming your payment...</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('billing.confirmingPayment')}</p>
         </div>
       )}
 
       {flow.isPaymentConfirmed && (
         <div className="py-6 text-center">
           <p className="mb-1 text-lg font-semibold text-green-600 dark:text-green-400">
-            Payment successful!
+            {t('billing.paymentSuccessful')}
           </p>
           {flow.confirmedStorageGb !== undefined && (
             <p className="mb-4 text-gray-500 dark:text-gray-400">
-              Your subscription is now active with {flow.confirmedStorageGb} GB of storage.
+              {t('billing.subscriptionActiveDesc', { gb: flow.confirmedStorageGb })}
             </p>
           )}
           <Button type="primary" onClick={onClose}>
-            OK
+            {t('billing.ok')}
           </Button>
         </div>
       )}
@@ -122,20 +124,18 @@ export function PurchaseComponent({ databaseId, onSubscriptionChanged, onClose }
       {flow.isPaymentTimedOut && (
         <div className="py-6 text-center">
           <p className="mb-4 text-yellow-500">
-            Payment confirmation is taking longer than expected. Please reload the page to check the
-            status.
+            {t('billing.paymentTimedOut')}
           </p>
-          <Button onClick={() => window.location.reload()}>Reload page</Button>
+          <Button onClick={() => window.location.reload()}>{t('billing.reloadPage')}</Button>
         </div>
       )}
 
       {flow.isUpgradeTimedOut && (
         <div className="py-6 text-center">
           <p className="mb-2 text-yellow-500">
-            Upgrade is taking longer than expected, it will be applied shortly. Please reload the
-            page
+            {t('billing.upgradeTimedOut')}
           </p>
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose}>{t('billing.closeBtn')}</Button>
         </div>
       )}
 
@@ -143,7 +143,7 @@ export function PurchaseComponent({ databaseId, onSubscriptionChanged, onClose }
         <div className="flex flex-col items-center gap-4 py-10">
           <Spin size="large" />
           <p className="text-gray-500 dark:text-gray-400">
-            Waiting for storage upgrade confirmation...
+            {t('billing.waitingForUpgrade')}
           </p>
         </div>
       )}
@@ -152,8 +152,7 @@ export function PurchaseComponent({ databaseId, onSubscriptionChanged, onClose }
         <div>
           {isChangeFlow && subscription.pendingStorageGb !== undefined && (
             <div className="mb-4 rounded-lg border border-yellow-300/50 bg-yellow-50 px-4 py-3 text-sm text-yellow-700 dark:border-yellow-600/30 dark:bg-yellow-900/20 dark:text-yellow-400">
-              Pending storage change to {formatSize(subscription.pendingStorageGb)} from next
-              billing cycle
+              {t('billing.pendingStorageChange', { size: formatSize(subscription.pendingStorageGb) })}
             </div>
           )}
 

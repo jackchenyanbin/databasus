@@ -1,6 +1,7 @@
 import { CheckCircleOutlined, ExclamationCircleOutlined, SwapOutlined } from '@ant-design/icons';
 import { Button, Modal, Radio, Select, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { backupConfigApi } from '../../../entity/backups';
 import type { TransferDatabaseRequest } from '../../../entity/backups';
@@ -35,6 +36,7 @@ export const DatabaseTransferDialogComponent = ({
   onClose,
   onTransferred,
 }: Props) => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [workspaces, setWorkspaces] = useState<WorkspaceResponse[]>([]);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | undefined>();
@@ -143,8 +145,8 @@ export const DatabaseTransferDialogComponent = ({
     try {
       await backupConfigApi.transferDatabase(database.id, request);
       ToastHelper.showToast({
-        title: 'Database transferred successfully!',
-        description: `"${database.name}" has been transferred to the new workspace`,
+        title: t('database.transferredOk'),
+        description: t('database.transferredDesc', { name: database.name }),
       });
       onTransferred();
     } catch (e) {
@@ -184,7 +186,7 @@ export const DatabaseTransferDialogComponent = ({
       title={
         <div className="flex items-center gap-2">
           <SwapOutlined />
-          Transfer database to another workspace
+          {t('database.transferDbTitle')}
         </div>
       }
       footer={null}
@@ -201,12 +203,12 @@ export const DatabaseTransferDialogComponent = ({
         <div className="py-3">
           {/* Workspace Selection */}
           <div className="mb-5">
-            <div className="mb-2 font-medium">Target workspace</div>
+            <div className="mb-2 font-medium">{t('database.targetWorkspace')}</div>
             <Select
               value={selectedWorkspaceId}
               onChange={setSelectedWorkspaceId}
               className="w-full"
-              placeholder="Select workspace"
+              placeholder={t('database.selectWorkspacePh')}
               options={workspaces.map((w) => ({ label: w.name, value: w.id }))}
             />
           </div>
@@ -215,7 +217,7 @@ export const DatabaseTransferDialogComponent = ({
             <>
               {/* Storage Transfer Options */}
               <div className="mb-5">
-                <div className="mb-2 font-medium">Storage</div>
+                <div className="mb-2 font-medium">{t('database.storageSection')}</div>
                 <Radio.Group
                   value={storageOption}
                   onChange={(e) => setStorageOption(e.target.value)}
@@ -225,14 +227,14 @@ export const DatabaseTransferDialogComponent = ({
                     <div>
                       <Radio value="transfer">
                         <span className="flex items-center gap-2">
-                          Transfer with existing storage
+                          {t('database.transferWithStorage')}
                           {isLoadingStorageCount && <Spin size="small" />}
                         </span>
                       </Radio>
                     </div>
                   )}
                   <div>
-                    <Radio value="select">Select storage from target workspace</Radio>
+                    <Radio value="select">{t('database.selectStorageFromTarget')}</Radio>
                   </div>
                 </Radio.Group>
 
@@ -244,14 +246,13 @@ export const DatabaseTransferDialogComponent = ({
                       <div className="flex items-center gap-2 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-600 dark:border-red-600 dark:bg-red-900/20">
                         <ExclamationCircleOutlined />
                         <span>
-                          This storage is used by {storageUsageCount} databases. Transfer is blocked
-                          because other databases depend on it.
+                          {t('database.storageBlocked', { count: storageUsageCount })}
                         </span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                         <CheckCircleOutlined />
-                        Storage can be transferred
+                        {t('database.storageCanTransfer')}
                       </div>
                     )}
                   </div>
@@ -271,10 +272,10 @@ export const DatabaseTransferDialogComponent = ({
                           setSelectedStorageId(storageId);
                         }}
                         className="w-full max-w-[300px]"
-                        placeholder="Select storage"
+                        placeholder={t('database.selectStoragePh')}
                         options={[
                           ...targetStorages.map((s) => ({ label: s.name, value: s.id })),
-                          { label: 'Create new storage', value: 'create-new-storage' },
+                          { label: t('database.createNewStorage'), value: 'create-new-storage' },
                         ]}
                       />
 
@@ -296,7 +297,7 @@ export const DatabaseTransferDialogComponent = ({
               {/* Notifier transfer options */}
               {hasCurrentNotifiers && (
                 <div className="mb-5">
-                  <div className="mb-2 font-medium">Notifiers (optional)</div>
+                  <div className="mb-2 font-medium">{t('database.notifiersOptional')}</div>
 
                   <Radio.Group
                     value={notifierOption}
@@ -304,10 +305,10 @@ export const DatabaseTransferDialogComponent = ({
                     className="flex flex-col gap-3"
                   >
                     <div>
-                      <Radio value="transfer">Transfer notifiers with database</Radio>
+                      <Radio value="transfer">{t('database.transferNotifiers')}</Radio>
                     </div>
                     <div>
-                      <Radio value="select">Select notifiers from target workspace</Radio>
+                      <Radio value="select">{t('database.selectNotifiersFromTarget')}</Radio>
                     </div>
                   </Radio.Group>
 
@@ -321,7 +322,7 @@ export const DatabaseTransferDialogComponent = ({
                             <div className="text-sm text-green-600 dark:text-green-400">
                               <div className="mb-1 flex items-center gap-1">
                                 <CheckCircleOutlined />
-                                <span>Will be transferred:</span>
+                                <span>{t('database.willBeTransferred')}</span>
                               </div>
                               <ul className="ml-5 list-disc">
                                 {notifiersCanTransfer.map((info) => (
@@ -335,12 +336,12 @@ export const DatabaseTransferDialogComponent = ({
                             <div className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-600 dark:border-red-600 dark:bg-red-900/20 dark:text-red-600">
                               <div className="mb-1 flex items-center gap-1">
                                 <ExclamationCircleOutlined />
-                                <span>Will NOT be transferred (used by other databases):</span>
+                                <span>{t('database.willNotBeTransferred')}</span>
                               </div>
                               <ul className="ml-5 list-disc">
                                 {notifiersBlockingTransfer.map((info) => (
                                   <li key={info.notifier.id}>
-                                    {info.notifier.name} (used by {info.databaseCount} databases)
+                                    {t('database.notifierUsedBy', { name: info.notifier.name, count: info.databaseCount })}
                                   </li>
                                 ))}
                               </ul>
@@ -350,8 +351,7 @@ export const DatabaseTransferDialogComponent = ({
                           {notifiersCanTransfer.length === 0 &&
                             notifiersBlockingTransfer.length > 0 && (
                               <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                No notifiers will be transferred. You can select notifiers from the
-                                target workspace after transfer.
+                                {t('database.noNotifiersWillTransfer')}
                               </div>
                             )}
                         </div>
@@ -373,10 +373,10 @@ export const DatabaseTransferDialogComponent = ({
                           setSelectedNotifierIds(notifierIds);
                         }}
                         className="w-full max-w-[300px]"
-                        placeholder="Select notifiers (optional)"
+                        placeholder={t('database.selectNotifiersPh')}
                         options={[
                           ...targetNotifiers.map((n) => ({ label: n.name, value: n.id })),
-                          { label: 'Create new notifier', value: 'create-new-notifier' },
+                          { label: t('database.createNewNotifier'), value: 'create-new-notifier' },
                         ]}
                       />
                     </div>
@@ -389,7 +389,7 @@ export const DatabaseTransferDialogComponent = ({
           {/* Action Buttons */}
           <div className="mt-5 flex gap-2">
             <Button type="default" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
 
             <Button
@@ -398,7 +398,7 @@ export const DatabaseTransferDialogComponent = ({
               loading={isTransferring}
               disabled={!isFormValid || isTransferring}
             >
-              Transfer
+              {t('database.transferBtn')}
             </Button>
           </div>
         </div>
@@ -407,7 +407,7 @@ export const DatabaseTransferDialogComponent = ({
       {/* Create Storage Modal */}
       {isShowCreateStorage && selectedWorkspaceId && (
         <Modal
-          title="Add storage"
+          title={t('database.addStorageTitle')}
           footer={null}
           open={isShowCreateStorage}
           onCancel={() => {
@@ -417,7 +417,7 @@ export const DatabaseTransferDialogComponent = ({
           maskClosable={false}
         >
           <div className="my-3 max-w-[275px] text-gray-500 dark:text-gray-400">
-            Storage - is a place where backups will be stored (local disk, S3, Google Drive, etc.)
+            {t('database.storageTipShort')}
           </div>
 
           <EditStorageComponent
@@ -438,7 +438,7 @@ export const DatabaseTransferDialogComponent = ({
       {/* Create Notifier Modal */}
       {isShowCreateNotifier && selectedWorkspaceId && (
         <Modal
-          title="Add notifier"
+          title={t('database.addNotifierTitle')}
           footer={null}
           open={isShowCreateNotifier}
           onCancel={() => {
@@ -448,7 +448,7 @@ export const DatabaseTransferDialogComponent = ({
           maskClosable={false}
         >
           <div className="my-3 max-w-[275px] text-gray-500 dark:text-gray-400">
-            Notifier - is a place where notifications will be sent (email, Slack, Telegram, etc.)
+            {t('database.notifierTipShort')}
           </div>
 
           <EditNotifierComponent

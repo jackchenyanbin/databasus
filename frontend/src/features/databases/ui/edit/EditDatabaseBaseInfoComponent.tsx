@@ -1,5 +1,6 @@
 import { Button, Input, Select } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   type Database,
@@ -42,6 +43,7 @@ export const EditDatabaseBaseInfoComponent = ({
   isSaveToApi,
   onSaved,
 }: Props) => {
+  const { t } = useTranslation();
   const [editingDatabase, setEditingDatabase] = useState<Database>();
   const [isUnsaved, setIsUnsaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -115,12 +117,12 @@ export const EditDatabaseBaseInfoComponent = ({
     <div>
       {isShowName && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[100px] md:min-w-[150px]">Name</div>
+          <div className="min-w-[100px] md:min-w-[150px]">{t('common.name')}</div>
           <Input
             value={editingDatabase.name || ''}
             onChange={(e) => updateDatabase({ name: e.target.value })}
             size="small"
-            placeholder="My favourite DB"
+            placeholder={t('database.namePlaceholderFav')}
             className="max-w-[150px] grow md:max-w-[200px]"
           />
         </div>
@@ -128,7 +130,7 @@ export const EditDatabaseBaseInfoComponent = ({
 
       {isShowType && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[100px] md:min-w-[150px]">Database type</div>
+          <div className="min-w-[100px] md:min-w-[150px]">{t('database.dbType')}</div>
 
           <div className="flex items-center">
             <Select
@@ -151,7 +153,7 @@ export const EditDatabaseBaseInfoComponent = ({
       <div className="mt-5 flex">
         {isShowCancelButton && (
           <Button danger ghost className="mr-1" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         )}
 
@@ -162,7 +164,7 @@ export const EditDatabaseBaseInfoComponent = ({
           loading={isSaving}
           disabled={(isSaveToApi && !isUnsaved) || !isAllFieldsFilled}
         >
-          {saveButtonText || 'Save'}
+          {saveButtonText || t('common.save')}
         </Button>
       </div>
     </div>

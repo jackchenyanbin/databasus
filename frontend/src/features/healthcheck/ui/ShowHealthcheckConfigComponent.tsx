@@ -1,5 +1,6 @@
 import { Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { healthcheckConfigApi } from '../../../entity/healthcheck';
 import type { HealthcheckConfig } from '../../../entity/healthcheck';
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export const ShowHealthcheckConfigComponent = ({ databaseId }: Props) => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [healthcheckConfig, setHealthcheckConfig] = useState<HealthcheckConfig | undefined>(
     undefined,
@@ -40,31 +42,31 @@ export const ShowHealthcheckConfigComponent = ({ databaseId }: Props) => {
   return (
     <div className="space-y-4">
       <div className="mb-1 flex items-center">
-        <div className="min-w-[180px]">Is health check enabled</div>
-        <div>{healthcheckConfig.isHealthcheckEnabled ? 'Yes' : 'No'}</div>
+        <div className="min-w-[180px]">{t('healthcheck.isEnabled')}</div>
+        <div>{healthcheckConfig.isHealthcheckEnabled ? t('healthcheck.yes') : t('healthcheck.no')}</div>
       </div>
 
       {healthcheckConfig.isHealthcheckEnabled && (
         <>
           <div className="mb-1 flex items-center">
-            <div className="min-w-[180px]">Notify when unavailable</div>
+            <div className="min-w-[180px]">{t('healthcheck.notifyWhenUnavailable')}</div>
             <div className="lg:w-[200px]">
-              {healthcheckConfig.isSentNotificationWhenUnavailable ? 'Yes' : 'No'}
+              {healthcheckConfig.isSentNotificationWhenUnavailable ? t('healthcheck.yes') : t('healthcheck.no')}
             </div>
           </div>
 
           <div className="mb-1 flex items-center">
-            <div className="min-w-[180px]">Check interval (minutes)</div>
+            <div className="min-w-[180px]">{t('healthcheck.checkInterval')}</div>
             <div className="lg:w-[200px]">{healthcheckConfig.intervalMinutes}</div>
           </div>
 
           <div className="mb-1 flex items-center">
-            <div className="min-w-[180px]">Attempts before down</div>
+            <div className="min-w-[180px]">{t('healthcheck.attemptsBeforeDown')}</div>
             <div className="lg:w-[200px]">{healthcheckConfig.attemptsBeforeConcideredAsDown}</div>
           </div>
 
           <div className="mb-1 flex items-center">
-            <div className="min-w-[180px]">Store attempts (days)</div>
+            <div className="min-w-[180px]">{t('healthcheck.storeAttemptsDays')}</div>
             <div className="lg:w-[200px]">{healthcheckConfig.storeAttemptsDays}</div>
           </div>
         </>

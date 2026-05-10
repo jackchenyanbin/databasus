@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { type Database, MariadbVersion } from '../../../../entity/databases';
 
 interface Props {
@@ -19,47 +21,48 @@ const mariadbVersionLabels: Record<MariadbVersion, string> = {
 };
 
 export const ShowMariaDbSpecificDataComponent = ({ database }: Props) => {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">MariaDB version</div>
+        <div className="min-w-[150px]">{t('database.mariadbVersion')}</div>
         <div>{database.mariadb?.version ? mariadbVersionLabels[database.mariadb.version] : ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px] break-all">Host</div>
+        <div className="min-w-[150px] break-all">{t('database.host')}</div>
         <div>{database.mariadb?.host || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Port</div>
+        <div className="min-w-[150px]">{t('database.port')}</div>
         <div>{database.mariadb?.port || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Username</div>
+        <div className="min-w-[150px]">{t('database.username')}</div>
         <div>{database.mariadb?.username || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Password</div>
+        <div className="min-w-[150px]">{t('database.password')}</div>
         <div>{'*************'}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">DB name</div>
+        <div className="min-w-[150px]">{t('database.dbNameShort')}</div>
         <div>{database.mariadb?.database || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Use HTTPS</div>
-        <div>{database.mariadb?.isHttps ? 'Yes' : 'No'}</div>
+        <div className="min-w-[150px]">{t('database.useHttps')}</div>
+        <div>{database.mariadb?.isHttps ? t('common.yes') : t('common.no')}</div>
       </div>
 
       {database.mariadb?.isExcludeEvents && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Exclude events</div>
-          <div>Yes</div>
+          <div className="min-w-[150px]">{t('database.excludeEvents')}</div>
+          <div>{t('common.yes')}</div>
         </div>
       )}
     </div>

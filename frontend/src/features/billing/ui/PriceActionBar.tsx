@@ -1,4 +1,5 @@
 import { Button } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 import { SubscriptionStatus } from '../../../entity/billing';
 
@@ -29,17 +30,18 @@ export function PriceActionBar({
   onPurchase,
   onChangeStorage,
 }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="mt-4 flex items-center gap-4 border-t border-gray-200 pt-4 dark:border-gray-700">
       <div className="flex-1">
         <p className="text-2xl font-bold">
           ${(monthlyPrice / 100).toFixed(2)}
-          <span className="text-base font-medium text-gray-500 dark:text-gray-400">/mo</span>
+          <span className="text-base font-medium text-gray-500 dark:text-gray-400">{t('billing.perMonth')}</span>
         </p>
 
         {isChangeFlow && !isSameStorage && (
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Currently ${(currentPrice / 100).toFixed(2)}/mo
+            {t('billing.currentlyPrice', { price: (currentPrice / 100).toFixed(2) })}
           </p>
         )}
       </div>
@@ -47,7 +49,7 @@ export function PriceActionBar({
       <div className="flex flex-col items-end gap-1">
         {isPurchaseFlow && (
           <Button type="primary" size="large" loading={isSubmitting} onClick={onPurchase}>
-            {subscriptionStatus === SubscriptionStatus.Canceled ? 'Re-subscribe' : 'Purchase'}
+            {subscriptionStatus === SubscriptionStatus.Canceled ? t('billing.reSubscribe') : t('billing.purchase')}
           </Button>
         )}
 
@@ -60,12 +62,12 @@ export function PriceActionBar({
               disabled={!!isSameStorage}
               onClick={onChangeStorage}
             >
-              {isUpgrade ? 'Upgrade' : isDowngrade ? 'Downgrade' : 'Change Storage'}
+              {isUpgrade ? t('billing.upgrade') : isDowngrade ? t('billing.downgrade') : t('billing.changeStorageBtn')}
             </Button>
 
             {isDowngrade && (
               <p className="text-xs text-gray-500">
-                Storage will be reduced from next billing cycle
+                {t('billing.downgradeHint')}
               </p>
             )}
           </>

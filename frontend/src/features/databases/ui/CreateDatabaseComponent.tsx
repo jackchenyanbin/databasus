@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type BackupConfig, backupConfigApi, backupsApi } from '../../../entity/backups';
 import {
@@ -75,6 +76,7 @@ const initializeDatabaseTypeData = (db: Database): Database => {
 };
 
 export const CreateDatabaseComponent = ({ user, workspaceId, onCreated, onClose }: Props) => {
+  const { t } = useTranslation();
   const [isCreating, setIsCreating] = useState(false);
   const [backupConfig, setBackupConfig] = useState<BackupConfig | undefined>();
   const [database, setDatabase] = useState<Database>(createInitialDatabase(workspaceId));
@@ -117,7 +119,7 @@ export const CreateDatabaseComponent = ({ user, workspaceId, onCreated, onClose 
           isShowName
           isShowType
           isSaveToApi={false}
-          saveButtonText="Continue"
+          saveButtonText={t('common.continue')}
           onCancel={() => onClose()}
           onSaved={(db) => {
             const initializedDb = initializeDatabaseTypeData(db);
@@ -137,7 +139,7 @@ export const CreateDatabaseComponent = ({ user, workspaceId, onCreated, onClose 
         onCancel={() => onClose()}
         isShowBackButton
         onBack={() => setStep('base-info')}
-        saveButtonText="Continue"
+        saveButtonText={t('common.continue')}
         isSaveToApi={false}
         onSaved={(database) => {
           setDatabase({ ...database });
@@ -176,7 +178,7 @@ export const CreateDatabaseComponent = ({ user, workspaceId, onCreated, onClose 
         onCancel={() => onClose()}
         isShowBackButton
         onBack={() => setStep('db-settings')}
-        saveButtonText="Continue"
+        saveButtonText={t('common.continue')}
         isSaveToApi={false}
         onSaved={(backupConfig) => {
           setBackupConfig(backupConfig);
@@ -188,7 +190,7 @@ export const CreateDatabaseComponent = ({ user, workspaceId, onCreated, onClose 
 
   if (step === 'notifiers') {
     if (isCreating) {
-      return <div>Creating database...</div>;
+      return <div>{t('database.creating')}</div>;
     }
 
     return (
@@ -200,7 +202,7 @@ export const CreateDatabaseComponent = ({ user, workspaceId, onCreated, onClose 
         isShowBackButton
         onBack={() => setStep('backup-config')}
         isShowSaveOnlyForUnsaved={false}
-        saveButtonText="Complete"
+        saveButtonText={t('common.complete')}
         isSaveToApi={false}
         onSaved={(database) => {
           if (isCreating) return;

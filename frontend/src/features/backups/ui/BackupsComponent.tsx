@@ -15,6 +15,7 @@ import { Button, Modal, Spin, Table, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { IS_CLOUD } from '../../../constants';
 import {
@@ -80,6 +81,8 @@ export const BackupsComponent = ({
 
   const [isFilterPanelVisible, setIsFilterPanelVisible] = useState(false);
   const [filters, setFilters] = useState<BackupsFilters>({});
+
+  const { t } = useTranslation();
 
   const downloadBackup = async (backupId: string) => {
     try {
@@ -258,13 +261,13 @@ export const BackupsComponent = ({
   const renderStatus = (status: BackupStatus, record: Backup) => {
     if (status === BackupStatus.FAILED) {
       return (
-        <Tooltip title="Click to see error details">
+        <Tooltip title={t('backup.clickToSeeError')}>
           <div
             className="flex cursor-pointer items-center text-red-600 underline"
             onClick={() => setShowingBackupError(record)}
           >
             <ExclamationCircleOutlined className="mr-2" style={{ fontSize: 16 }} />
-            <div>Failed</div>
+            <div>{t('backup.statusFailed')}</div>
           </div>
         </Tooltip>
       );
@@ -274,9 +277,9 @@ export const BackupsComponent = ({
       return (
         <div className="flex items-center text-green-600">
           <CheckCircleOutlined className="mr-2" style={{ fontSize: 16 }} />
-          <div>Successful</div>
+          <div>{t('backup.statusSuccessful')}</div>
           {record.encryption === BackupEncryption.ENCRYPTED && (
-            <Tooltip title="Encrypted">
+            <Tooltip title={t('backup.statusEncrypted')}>
               <LockOutlined className="ml-1" style={{ fontSize: 14 }} />
             </Tooltip>
           )}
@@ -288,7 +291,7 @@ export const BackupsComponent = ({
       return (
         <div className="flex items-center text-gray-600">
           <DeleteOutlined className="mr-2" style={{ fontSize: 16 }} />
-          <div>Deleted</div>
+          <div>{t('backup.statusDeleted')}</div>
         </div>
       );
     }
@@ -297,7 +300,7 @@ export const BackupsComponent = ({
       return (
         <div className="flex items-center font-bold text-blue-600">
           <SyncOutlined spin />
-          <span className="ml-2">In progress</span>
+          <span className="ml-2">{t('backup.statusInProgress')}</span>
         </div>
       );
     }
@@ -306,7 +309,7 @@ export const BackupsComponent = ({
       return (
         <div className="flex items-center text-gray-600">
           <CloseCircleOutlined className="mr-2" style={{ fontSize: 16 }} />
-          <div>Canceled</div>
+          <div>{t('backup.statusCanceled')}</div>
         </div>
       );
     }
@@ -324,7 +327,7 @@ export const BackupsComponent = ({
               {cancellingBackupId === record.id ? (
                 <SyncOutlined spin />
               ) : (
-                <Tooltip title="Cancel backup">
+                <Tooltip title={t('backup.cancelBackupTooltip')}>
                   <CloseCircleOutlined
                     className="cursor-pointer"
                     onClick={() => {
@@ -345,7 +348,7 @@ export const BackupsComponent = ({
             ) : (
               <>
                 {isCanManageDBs && (
-                  <Tooltip title="Delete backup">
+                  <Tooltip title={t('backup.deleteBackupTooltip')}>
                     <DeleteOutlined
                       className="cursor-pointer"
                       onClick={() => {
@@ -357,7 +360,7 @@ export const BackupsComponent = ({
                   </Tooltip>
                 )}
 
-                <Tooltip title="Restore from backup">
+                <Tooltip title={t('backup.restoreBackupTooltip')}>
                   <CloudUploadOutlined
                     className="cursor-pointer"
                     onClick={() => {
@@ -372,14 +375,14 @@ export const BackupsComponent = ({
                 <Tooltip
                   title={
                     database.type === DatabaseType.POSTGRES
-                      ? 'Download backup file. It can be restored manually via pg_restore (from custom format)'
+                      ? t('backup.downloadTooltipPostgres')
                       : database.type === DatabaseType.MYSQL
-                        ? 'Download backup file. It can be restored manually via mysql client (from SQL dump)'
+                        ? t('backup.downloadTooltipMysql')
                         : database.type === DatabaseType.MARIADB
-                          ? 'Download backup file. It can be restored manually via mariadb client (from SQL dump)'
+                          ? t('backup.downloadTooltipMariadb')
                           : database.type === DatabaseType.MONGODB
-                            ? 'Download backup file. It can be restored manually via mongorestore (from archive)'
-                            : 'Download backup file'
+                            ? t('backup.downloadTooltipMongo')
+                            : t('backup.downloadTooltipDefault')
                   }
                 >
                   {downloadingBackupId === record.id ? (
@@ -428,7 +431,7 @@ export const BackupsComponent = ({
 
   const columns: ColumnsType<Backup> = [
     {
-      title: 'Created at',
+      title: t('backup.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (createdAt: string) => (
@@ -443,7 +446,7 @@ export const BackupsComponent = ({
       defaultSortOrder: 'descend',
     },
     {
-      title: 'Status',
+      title: t('backup.backupStatus'),
       dataIndex: 'status',
       key: 'status',
       render: (status: BackupStatus, record: Backup) => renderStatus(status, record),
@@ -451,10 +454,10 @@ export const BackupsComponent = ({
     {
       title: (
         <div className="flex items-center">
-          Size
+          {t('backup.size')}
           <Tooltip
             className="ml-1"
-            title="The file size we actually store in the storage (local, S3, Google Drive, etc.), usually compressed in ~5x times"
+            title={t('backup.sizeTooltip')}
           >
             <InfoCircleOutlined />
           </Tooltip>
@@ -480,14 +483,14 @@ export const BackupsComponent = ({
       ),
     },
     {
-      title: 'Duration',
+      title: t('backup.duration'),
       dataIndex: 'backupDurationMs',
       key: 'backupDurationMs',
       width: 150,
       render: (durationMs: number) => formatDuration(durationMs),
     },
     {
-      title: 'Actions',
+      title: t('backup.actions'),
       dataIndex: '',
       key: '',
       render: (_, record: Backup) => renderActions(record),
@@ -512,7 +515,7 @@ export const BackupsComponent = ({
       className={`w-full bg-white p-3 shadow md:p-5 dark:bg-gray-800 ${isDirectlyUnderTab ? 'rounded-tr-md rounded-br-md rounded-bl-md' : 'rounded-md'}`}
     >
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-bold md:text-xl dark:text-white">Backups</h2>
+        <h2 className="text-lg font-bold md:text-xl dark:text-white">{t('backup.title')}</h2>
         <div className="relative">
           {isFilterPanelVisible ? (
             <FilterFilled
@@ -551,7 +554,7 @@ export const BackupsComponent = ({
 
       {!isBackupConfigLoading && !backupConfig?.isBackupsEnabled && (
         <div className="text-sm text-red-600">
-          Scheduled backups are disabled (you can enable it back in the backup configuration)
+          {t('backup.scheduledDisabled')}
         </div>
       )}
 
@@ -566,8 +569,8 @@ export const BackupsComponent = ({
             disabled={isMakeBackupRequestLoading}
             loading={isMakeBackupRequestLoading}
           >
-            <span className="md:hidden">Backup now</span>
-            <span className="hidden md:inline">Make backup right now</span>
+            <span className="md:hidden">{t('backup.backupNow')}</span>
+            <span className="hidden md:inline">{t('backup.makeBackupRightNow')}</span>
           </Button>
         </div>
       )}
@@ -589,7 +592,7 @@ export const BackupsComponent = ({
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Created at</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{t('backup.createdAt')}</div>
                         <div className="text-sm font-medium">
                           {dayjs.utc(backup.createdAt).local().format(getUserTimeFormat().format)}
                         </div>
@@ -602,7 +605,7 @@ export const BackupsComponent = ({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Size</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{t('backup.size')}</div>
                         <div className="flex items-center gap-2 text-sm font-medium">
                           {formatSize(backup.backupSizeMb)}
                           {backup.pgWalBackupType === PgWalBackupType.PG_FULL_BACKUP && (
@@ -618,7 +621,7 @@ export const BackupsComponent = ({
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Duration</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{t('backup.duration')}</div>
                         <div className="text-sm font-medium">
                           {formatDuration(backup.backupDurationMs)}
                         </div>
@@ -641,11 +644,11 @@ export const BackupsComponent = ({
           )}
           {!hasMore && backups.length > 0 && (
             <div className="mt-3 text-center text-sm text-gray-500 dark:text-gray-400">
-              All backups loaded ({totalBackups} total)
+              {t('backup.allBackupsLoaded', { total: totalBackups })}
             </div>
           )}
           {!isBackupsLoading && backups.length === 0 && (
-            <div className="py-8 text-center text-gray-500 dark:text-gray-400">No backups yet</div>
+            <div className="py-8 text-center text-gray-500 dark:text-gray-400">{t('backup.noBackupsYetText')}</div>
           )}
         </div>
 
@@ -667,7 +670,7 @@ export const BackupsComponent = ({
           )}
           {!hasMore && backups.length > 0 && (
             <div className="mt-2 text-center text-gray-500 dark:text-gray-400">
-              All backups loaded ({totalBackups} total)
+              {t('backup.allBackupsLoaded', { total: totalBackups })}
             </div>
           )}
         </div>
@@ -677,9 +680,9 @@ export const BackupsComponent = ({
         <ConfirmationComponent
           onConfirm={deleteBackup}
           onDecline={() => setDeleteConfimationId(undefined)}
-          description="Are you sure you want to delete this backup?"
+          description={t('backup.deleteConfirm')}
           actionButtonColor="red"
-          actionText="Delete"
+          actionText={t('common.delete')}
         />
       )}
 
@@ -689,7 +692,7 @@ export const BackupsComponent = ({
             width={600}
             open={!!showingRestoresBackupId}
             onCancel={() => setShowingRestoresBackupId(undefined)}
-            title="Restore from backup"
+            title={t('backup.restoreFromBackup')}
             footer={null}
             maskClosable={false}
           >
@@ -703,7 +706,7 @@ export const BackupsComponent = ({
             width={400}
             open={!!showingRestoresBackupId}
             onCancel={() => setShowingRestoresBackupId(undefined)}
-            title="Restore from backup"
+            title={t('backup.restoreFromBackup')}
             footer={null}
             maskClosable={false}
           >
@@ -716,7 +719,7 @@ export const BackupsComponent = ({
 
       {showingBackupError && (
         <Modal
-          title="Backup error details"
+          title={t('backup.errorDetails')}
           open={!!showingBackupError}
           onCancel={() => setShowingBackupError(undefined)}
           maskClosable={false}

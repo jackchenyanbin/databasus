@@ -1,5 +1,6 @@
 import { Button, Modal, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { databaseApi } from '../../../entity/databases';
 import type { Database } from '../../../entity/databases';
@@ -20,6 +21,7 @@ interface Props {
 const SELECTED_DATABASE_STORAGE_KEY = 'selectedDatabaseId';
 
 export const DatabasesComponent = ({ contentHeight, workspace, user, isCanManageDBs }: Props) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(true);
   const [databases, setDatabases] = useState<Database[]>([]);
@@ -84,7 +86,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, user, isCanManage
 
   const addDatabaseButton = (
     <Button type="primary" className="mb-2 w-full" onClick={() => setIsShowAddDatabase(true)}>
-      Add database
+      {t('database.add')}
     </Button>
   );
 
@@ -110,7 +112,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, user, isCanManage
 
                 <div className="mb-2">
                   <input
-                    placeholder="Search database"
+                    placeholder={t('database.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full border-b border-gray-300 p-1 text-gray-500 outline-none dark:text-gray-400"
@@ -130,14 +132,14 @@ export const DatabasesComponent = ({ contentHeight, workspace, user, isCanManage
                 ))
               : searchQuery && (
                   <div className="mb-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No databases found matching &quot;{searchQuery}&quot;
+                    {t('database.notFoundMatching', { query: searchQuery })}
                   </div>
                 )}
 
             {databases.length < 5 && isCanManageDBs && addDatabaseButton}
 
             <div className="mx-3 text-center text-xs text-gray-500 dark:text-gray-400">
-              Database - is a thing we are backing up
+              {t('database.description')}
             </div>
           </div>
         )}
@@ -151,7 +153,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, user, isCanManage
                   onClick={() => updateSelectedDatabaseId(undefined)}
                   className="w-full"
                 >
-                  ← Back to databases
+                  {t('database.backToList')}
                 </Button>
               </div>
             )}
@@ -178,7 +180,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, user, isCanManage
 
       {isShowAddDatabase && (
         <Modal
-          title="Add database for backup"
+          title={t('database.addForBackup')}
           footer={<div />}
           open={isShowAddDatabase}
           onCancel={() => setIsShowAddDatabase(false)}

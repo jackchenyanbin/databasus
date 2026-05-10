@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { type Database } from '../../../../entity/databases';
 import { getNotifierLogoFromType } from '../../../../entity/notifiers/models/getNotifierLogoFromType';
 
@@ -6,10 +8,11 @@ interface Props {
 }
 
 export const ShowDatabaseNotifiersComponent = ({ database }: Props) => {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="flex w-full">
-        <div className="min-w-[150px]">Notify to</div>
+        <div className="min-w-[150px]">{t('database.notifyTo')}</div>
 
         <div>
           {database.notifiers && database.notifiers.length > 0 ? (
@@ -23,7 +26,7 @@ export const ShowDatabaseNotifiersComponent = ({ database }: Props) => {
               </div>
             ))
           ) : (
-            <div className="text-gray-500 dark:text-gray-400">No notifiers configured</div>
+            <div className="text-gray-500 dark:text-gray-400">{t('database.noNotifiersConfigured')}</div>
           )}
         </div>
       </div>

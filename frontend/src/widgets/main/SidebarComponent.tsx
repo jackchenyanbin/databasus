@@ -1,12 +1,14 @@
 import { CloseOutlined } from '@ant-design/icons';
 import { Drawer, Tooltip } from 'antd';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { IS_CLOUD } from '../../constants';
 import { type DiskUsage } from '../../entity/disk';
 import { type UserProfile, UserRole } from '../../entity/users';
 import { useIsMobile } from '../../shared/hooks';
 import { useTheme } from '../../shared/theme';
+import { LanguageToggleComponent } from '../../shared/ui/LanguageToggleComponent';
 import { StarButtonComponent } from '../../shared/ui/StarButtonComponent';
 import { ThemeToggleComponent } from '../../shared/ui/ThemeToggleComponent';
 
@@ -42,6 +44,7 @@ export const SidebarComponent = ({
 }: Props) => {
   const isMobile = useIsMobile();
   const { resolvedTheme } = useTheme();
+  const { t } = useTranslation();
 
   // Close sidebar on desktop when it becomes desktop size
   useEffect(() => {
@@ -129,7 +132,10 @@ export const SidebarComponent = ({
       <div className="flex h-full flex-col">
         {/* Custom Close Button */}
         <div className="flex items-center justify-between border-b border-gray-200 px-3 py-3 dark:border-gray-700">
-          <ThemeToggleComponent />
+          <div className="flex items-center gap-2">
+            <ThemeToggleComponent />
+            <LanguageToggleComponent />
+          </div>
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -170,15 +176,20 @@ export const SidebarComponent = ({
         <div className="border-t border-gray-200 bg-gray-50 px-3 py-4 dark:border-gray-700 dark:bg-gray-800">
           {diskUsage && (
             <div className="mb-4">
-              <Tooltip title="To make backups locally and restore them, you need to have enough space on your disk. For restore, you need to have same amount of space that the backup size.">
+              <Tooltip title={t('nav.diskUsageTooltip')}>
                 <div
                   className={`cursor-pointer text-xs ${isUsedMoreThan95Percent ? 'text-red-500' : 'text-gray-600 dark:text-gray-400'}`}
                 >
-                  <div className="font-medium">Disk Usage</div>
+                  <div className="font-medium">{t('nav.diskUsage')}</div>
                   <div className="mt-1">
-                    {(diskUsage.usedSpaceBytes / 1024 ** 3).toFixed(1)} of{' '}
-                    {(diskUsage.totalSpaceBytes / 1024 ** 3).toFixed(1)} GB used (
-                    {((diskUsage.usedSpaceBytes / diskUsage.totalSpaceBytes) * 100).toFixed(1)}%)
+                    {t('nav.diskUsed', {
+                      used: (diskUsage.usedSpaceBytes / 1024 ** 3).toFixed(1),
+                      total: (diskUsage.totalSpaceBytes / 1024 ** 3).toFixed(1),
+                      percent: (
+                        (diskUsage.usedSpaceBytes / diskUsage.totalSpaceBytes) *
+                        100
+                      ).toFixed(1),
+                    })}
                   </div>
                 </div>
               </Tooltip>
@@ -192,7 +203,7 @@ export const SidebarComponent = ({
               target="_blank"
               rel="noreferrer"
             >
-              Documentation
+              {t('nav.documentation')}
             </a>
 
             <a
@@ -201,7 +212,7 @@ export const SidebarComponent = ({
               target="_blank"
               rel="noreferrer"
             >
-              Community
+              {t('nav.community')}
             </a>
 
             {!IS_CLOUD && (
@@ -211,7 +222,7 @@ export const SidebarComponent = ({
                 target="_blank"
                 rel="noreferrer"
               >
-                Cloud
+                {t('nav.cloud')}
               </a>
             )}
 

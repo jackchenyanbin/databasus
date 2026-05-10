@@ -1,5 +1,6 @@
 import { Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 import { type ThemeMode, useTheme } from '../theme';
 
@@ -63,6 +64,7 @@ const SystemIcon = () => (
 
 export function ThemeToggleComponent() {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { t } = useTranslation();
 
   const items: MenuProps['items'] = [
     {
@@ -70,7 +72,7 @@ export function ThemeToggleComponent() {
       label: (
         <div className="flex items-center gap-2">
           <SunIcon />
-          <span>Light</span>
+          <span>{t('theme.light')}</span>
         </div>
       ),
       onClick: () => setTheme('light'),
@@ -80,7 +82,7 @@ export function ThemeToggleComponent() {
       label: (
         <div className="flex items-center gap-2">
           <MoonIcon />
-          <span>Dark</span>
+          <span>{t('theme.dark')}</span>
         </div>
       ),
       onClick: () => setTheme('dark'),
@@ -90,7 +92,7 @@ export function ThemeToggleComponent() {
       label: (
         <div className="flex items-center gap-2">
           <SystemIcon />
-          <span>System</span>
+          <span>{t('theme.system')}</span>
         </div>
       ),
       onClick: () => setTheme('system'),
@@ -107,11 +109,11 @@ export function ThemeToggleComponent() {
   const getLabel = (mode: ThemeMode) => {
     switch (mode) {
       case 'light':
-        return 'Light';
+        return t('theme.light');
       case 'dark':
-        return 'Dark';
+        return t('theme.dark');
       case 'system':
-        return 'System';
+        return t('theme.system');
     }
   };
 
@@ -119,7 +121,7 @@ export function ThemeToggleComponent() {
     <Dropdown menu={{ items, selectedKeys: [theme] }} trigger={['click']} placement="bottomRight">
       <button
         className="flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-        title={`Theme: ${getLabel(theme)}`}
+        title={`${t('theme.title')}: ${getLabel(theme)}`}
       >
         {getCurrentIcon()}
         <span className="hidden sm:inline">{getLabel(theme)}</span>

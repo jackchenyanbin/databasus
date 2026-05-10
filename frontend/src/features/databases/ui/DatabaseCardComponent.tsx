@@ -1,6 +1,7 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { backupConfigApi } from '../../../entity/backups';
 import { type Database } from '../../../entity/databases';
@@ -19,6 +20,7 @@ export const DatabaseCardComponent = ({
   selectedDatabaseId,
   setSelectedDatabaseId,
 }: Props) => {
+  const { t } = useTranslation();
   const [storage, setStorage] = useState<Storage | undefined>();
 
   useEffect(() => {
@@ -42,7 +44,9 @@ export const DatabaseCardComponent = ({
                 database.healthStatus === HealthStatus.AVAILABLE ? 'bg-green-500' : 'bg-red-500'
               }`}
             >
-              {database.healthStatus === HealthStatus.AVAILABLE ? 'Available' : 'Unavailable'}
+              {database.healthStatus === HealthStatus.AVAILABLE
+                ? t('common.available')
+                : t('common.unavailable')}
             </div>
           </div>
         )}
@@ -50,7 +54,7 @@ export const DatabaseCardComponent = ({
 
       {storage && (
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          <span>Storage: </span>
+          <span>{t('database.storageLabel')}</span>
           <span className="inline-flex items-center">
             {storage.name}{' '}
             {storage.type && (
@@ -66,14 +70,14 @@ export const DatabaseCardComponent = ({
 
       {database.lastBackupTime && (
         <div className="text-gray-500 dark:text-gray-400">
-          Last backup {dayjs(database.lastBackupTime).fromNow()}
+          {t('database.lastBackup', { time: dayjs(database.lastBackupTime).fromNow() })}
         </div>
       )}
 
       {database.lastBackupErrorMessage && (
         <div className="mt-1 flex items-center text-sm text-red-600 underline dark:text-red-400">
           <InfoCircleOutlined className="mr-1" style={{ color: 'red' }} />
-          Has backup error
+          {t('database.hasBackupError')}
         </div>
       )}
     </div>
