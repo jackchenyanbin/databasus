@@ -64,7 +64,7 @@ func (uc *RestoreMongodbBackupUsecase) Execute(
 	}
 
 	fieldEncryptor := util_encryption.GetFieldEncryptor()
-	decryptedPassword, err := fieldEncryptor.Decrypt(restoringToDB.ID, mdb.Password)
+	decryptedPassword, err := fieldEncryptor.Decrypt(mdb.Password)
 	if err != nil {
 		return fmt.Errorf("failed to decrypt password: %w", err)
 	}
@@ -78,11 +78,7 @@ func (uc *RestoreMongodbBackupUsecase) Execute(
 
 	return uc.restoreFromStorage(
 		parentCtx,
-		tools.GetMongodbExecutable(
-			tools.MongodbExecutableMongorestore,
-			config.GetEnv().EnvMode,
-			config.GetEnv().MongodbInstallDir,
-		),
+		tools.GetMongodbExecutable(tools.MongodbExecutableMongorestore),
 		args,
 		backup,
 		storage,
@@ -94,7 +90,7 @@ func (uc *RestoreMongodbBackupUsecase) buildMongorestoreArgs(
 	password string,
 	sourceDatabase string,
 ) []string {
-	uri := mdb.BuildMongodumpURI(password)
+	uri := mdb.BuildRestoreURI(password)
 
 	args := []string{
 		"--uri=" + uri,

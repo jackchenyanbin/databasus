@@ -7,8 +7,8 @@ WORKDIR /frontend
 ARG APP_VERSION=dev
 ENV VITE_APP_VERSION=$APP_VERSION
 
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
 COPY frontend/ ./
 
 # Copy .env file (with fallback to .env.production.example)
@@ -18,11 +18,11 @@ RUN if [ ! -f .env ]; then \
   fi; \
   fi
 
-RUN npm run build
+RUN pnpm build
 
 # ========= BUILD BACKEND =========
 # Backend build stage
-FROM --platform=$BUILDPLATFORM golang:1.26.1 AS backend-build
+FROM --platform=$BUILDPLATFORM golang:1.26.3 AS backend-build
 
 # Make TARGET args available early so tools built here match the final image arch
 ARG TARGETOS
@@ -32,7 +32,7 @@ ARG TARGETARCH
 # binary is compiled for the target architecture instead of downloading a
 # prebuilt binary which may have the wrong architecture (causes exec format
 # errors on ARM).
-RUN git clone --depth 1 --branch v3.24.3 https://github.com/pressly/goose.git /tmp/goose && \
+RUN git clone --depth 1 --branch v3.27.1 https://github.com/pressly/goose.git /tmp/goose && \
   cd /tmp/goose/cmd/goose && \
   GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} \
   go build -o /usr/local/bin/goose . && \
@@ -81,16 +81,16 @@ RUN CGO_ENABLED=0 \
 # so the agent runs on any Linux distro (Alpine, Debian, Ubuntu, RHEL, etc.).
 # APP_VERSION is baked into the binary via -ldflags so the agent can
 # compare its version against the server and auto-update when needed.
-FROM --platform=$BUILDPLATFORM golang:1.26.1 AS agent-build
+FROM --platform=$BUILDPLATFORM golang:1.26.3 AS agent-build
 
 ARG APP_VERSION=dev
 
 WORKDIR /agent
 
-COPY agent/go.mod ./
+COPY agent/backup/go.mod ./
 RUN go mod download
 
-COPY agent/ ./
+COPY agent/backup/ ./
 
 # Build for x86_64 (amd64) — static binary, no glibc dependency
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
@@ -116,133 +116,52 @@ ENV CONTAINER_ARCH=$TARGETARCH
 # Set production mode for Docker containers
 ENV ENV_MODE=production
 
-# ========= STEP 1: Install base packages =========
-RUN apt-get update
-RUN apt-get install -y --no-install-recommends \
-  wget ca-certificates gnupg lsb-release sudo gosu curl unzip xz-utils libncurses5 libncurses6
-RUN rm -rf /var/lib/apt/lists/*
+# ========= Install all apt packages in a single layer =========
+# Combines base packages + PostgreSQL 17 (pgdg repo) + Valkey (greensec repo) + rclone
+# into one RUN to minimise layer count and cache-export overhead.
+# Valkey is only accessible internally (localhost) — not exposed outside container.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+      wget ca-certificates gnupg lsb-release sudo gosu curl unzip xz-utils \
+      libncurses5 libncurses6 rclone \
+      libmariadb3; \
+    wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -; \
+    echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+      > /etc/apt/sources.list.d/pgdg.list; \
+    wget -O /usr/share/keyrings/greensec.github.io-valkey-debian.key \
+      https://greensec.github.io/valkey-debian/public.key; \
+    echo "deb [signed-by=/usr/share/keyrings/greensec.github.io-valkey-debian.key] https://greensec.github.io/valkey-debian/repo $(lsb_release -cs) main" \
+      > /etc/apt/sources.list.d/valkey-debian.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends postgresql-17 valkey; \
+    rm -rf /var/lib/apt/lists/*
 
-# ========= Install PostgreSQL client binaries (versions 12-18) =========
-# Pre-downloaded binaries from assets/tools/ - no network download needed
+# ========= Pre-built DB client binaries (PG, MySQL, MariaDB, MongoDB) =========
+# All client tools live under /app/assets/tools/<arch>/ — the backend resolves
+# them at runtime via runtime.GOARCH. Use a bind mount so only the tree matching
+# $TARGETARCH ends up in an image layer (the unused arch never materialises).
 ARG TARGETARCH
-RUN mkdir -p /usr/lib/postgresql/12/bin /usr/lib/postgresql/13/bin \
-  /usr/lib/postgresql/14/bin /usr/lib/postgresql/15/bin \
-  /usr/lib/postgresql/16/bin /usr/lib/postgresql/17/bin \
-  /usr/lib/postgresql/18/bin
-
-# Copy pre-downloaded PostgreSQL binaries based on architecture
-COPY assets/tools/x64/postgresql/ /tmp/pg-x64/
-COPY assets/tools/arm/postgresql/ /tmp/pg-arm/
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
-  cp -r /tmp/pg-x64/postgresql-12/bin/* /usr/lib/postgresql/12/bin/ && \
-  cp -r /tmp/pg-x64/postgresql-13/bin/* /usr/lib/postgresql/13/bin/ && \
-  cp -r /tmp/pg-x64/postgresql-14/bin/* /usr/lib/postgresql/14/bin/ && \
-  cp -r /tmp/pg-x64/postgresql-15/bin/* /usr/lib/postgresql/15/bin/ && \
-  cp -r /tmp/pg-x64/postgresql-16/bin/* /usr/lib/postgresql/16/bin/ && \
-  cp -r /tmp/pg-x64/postgresql-17/bin/* /usr/lib/postgresql/17/bin/ && \
-  cp -r /tmp/pg-x64/postgresql-18/bin/* /usr/lib/postgresql/18/bin/; \
-  elif [ "$TARGETARCH" = "arm64" ]; then \
-  cp -r /tmp/pg-arm/postgresql-12/bin/* /usr/lib/postgresql/12/bin/ && \
-  cp -r /tmp/pg-arm/postgresql-13/bin/* /usr/lib/postgresql/13/bin/ && \
-  cp -r /tmp/pg-arm/postgresql-14/bin/* /usr/lib/postgresql/14/bin/ && \
-  cp -r /tmp/pg-arm/postgresql-15/bin/* /usr/lib/postgresql/15/bin/ && \
-  cp -r /tmp/pg-arm/postgresql-16/bin/* /usr/lib/postgresql/16/bin/ && \
-  cp -r /tmp/pg-arm/postgresql-17/bin/* /usr/lib/postgresql/17/bin/ && \
-  cp -r /tmp/pg-arm/postgresql-18/bin/* /usr/lib/postgresql/18/bin/; \
-  fi && \
-  rm -rf /tmp/pg-x64 /tmp/pg-arm && \
-  chmod +x /usr/lib/postgresql/*/bin/*
-
-# Install PostgreSQL 17 server (needed for internal database)
-# Add PostgreSQL repository for server installation only
-RUN wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
-  echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
-  > /etc/apt/sources.list.d/pgdg.list && \
-  apt-get update && \
-  apt-get install -y --no-install-recommends postgresql-17 && \
-  rm -rf /var/lib/apt/lists/*
-
-# Install Valkey server from debian repository
-# Valkey is only accessible internally (localhost) - not exposed outside container
-RUN wget -O /usr/share/keyrings/greensec.github.io-valkey-debian.key https://greensec.github.io/valkey-debian/public.key && \
-  echo "deb [signed-by=/usr/share/keyrings/greensec.github.io-valkey-debian.key] https://greensec.github.io/valkey-debian/repo $(lsb_release -cs) main" \
-  > /etc/apt/sources.list.d/valkey-debian.list && \
-  apt-get update && \
-  apt-get install -y --no-install-recommends valkey && \
-  rm -rf /var/lib/apt/lists/*
-
-# ========= Install rclone =========
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends rclone && \
-  rm -rf /var/lib/apt/lists/*
-
-# Create directories for all database clients
-RUN mkdir -p /usr/local/mysql-5.7/bin /usr/local/mysql-8.0/bin /usr/local/mysql-8.4/bin \
-  /usr/local/mysql-9/bin \
-  /usr/local/mariadb-10.6/bin /usr/local/mariadb-12.1/bin \
-  /usr/local/mongodb-database-tools/bin
-
-# ========= Install MySQL clients (5.7, 8.0, 8.4, 9) =========
-# Pre-downloaded binaries from assets/tools/ - no network download needed
-# Note: MySQL 5.7 is only available for x86_64
-# Note: MySQL binaries require libncurses5 for terminal handling
-COPY assets/tools/x64/mysql/ /tmp/mysql-x64/
-COPY assets/tools/arm/mysql/ /tmp/mysql-arm/
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
-  cp /tmp/mysql-x64/mysql-5.7/bin/* /usr/local/mysql-5.7/bin/ && \
-  cp /tmp/mysql-x64/mysql-8.0/bin/* /usr/local/mysql-8.0/bin/ && \
-  cp /tmp/mysql-x64/mysql-8.4/bin/* /usr/local/mysql-8.4/bin/ && \
-  cp /tmp/mysql-x64/mysql-9/bin/* /usr/local/mysql-9/bin/; \
-  elif [ "$TARGETARCH" = "arm64" ]; then \
-  echo "MySQL 5.7 not available for arm64, skipping..." && \
-  cp /tmp/mysql-arm/mysql-8.0/bin/* /usr/local/mysql-8.0/bin/ && \
-  cp /tmp/mysql-arm/mysql-8.4/bin/* /usr/local/mysql-8.4/bin/ && \
-  cp /tmp/mysql-arm/mysql-9/bin/* /usr/local/mysql-9/bin/; \
-  fi && \
-  rm -rf /tmp/mysql-x64 /tmp/mysql-arm && \
-  chmod +x /usr/local/mysql-*/bin/*
-
-# ========= Install MariaDB clients (10.6, 12.1) =========
-# Pre-downloaded binaries from assets/tools/ - no network download needed
-# 10.6 (legacy): For older servers (5.5, 10.1) that don't have generation_expression column
-# 12.1 (modern): For newer servers (10.2+)
-COPY assets/tools/x64/mariadb/ /tmp/mariadb-x64/
-COPY assets/tools/arm/mariadb/ /tmp/mariadb-arm/
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
-  cp /tmp/mariadb-x64/mariadb-10.6/bin/* /usr/local/mariadb-10.6/bin/ && \
-  cp /tmp/mariadb-x64/mariadb-12.1/bin/* /usr/local/mariadb-12.1/bin/; \
-  elif [ "$TARGETARCH" = "arm64" ]; then \
-  cp /tmp/mariadb-arm/mariadb-10.6/bin/* /usr/local/mariadb-10.6/bin/ && \
-  cp /tmp/mariadb-arm/mariadb-12.1/bin/* /usr/local/mariadb-12.1/bin/; \
-  fi && \
-  rm -rf /tmp/mariadb-x64 /tmp/mariadb-arm && \
-  chmod +x /usr/local/mariadb-*/bin/*
-
-# ========= Install MongoDB Database Tools =========
-# Note: MongoDB Database Tools are backward compatible - single version supports all server versions (4.0-8.0)
-# Note: For ARM64, we use Ubuntu 22.04 package as MongoDB doesn't provide Debian 12 ARM64 packages
-RUN apt-get update && \
-  if [ "$TARGETARCH" = "amd64" ]; then \
-  wget -q https://fastdl.mongodb.org/tools/db/mongodb-database-tools-debian12-x86_64-100.10.0.deb -O /tmp/mongodb-database-tools.deb; \
-  elif [ "$TARGETARCH" = "arm64" ]; then \
-  wget -q https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-arm64-100.10.0.deb -O /tmp/mongodb-database-tools.deb; \
-  fi && \
-  dpkg -i /tmp/mongodb-database-tools.deb || apt-get install -f -y --no-install-recommends && \
-  rm -f /tmp/mongodb-database-tools.deb && \
-  rm -rf /var/lib/apt/lists/* && \
-  mkdir -p /usr/local/mongodb-database-tools/bin && \
-  if [ -f /usr/bin/mongodump ]; then \
-  ln -sf /usr/bin/mongodump /usr/local/mongodb-database-tools/bin/mongodump; \
-  fi && \
-  if [ -f /usr/bin/mongorestore ]; then \
-  ln -sf /usr/bin/mongorestore /usr/local/mongodb-database-tools/bin/mongorestore; \
-  fi
+RUN --mount=type=bind,source=assets/tools,target=/ctx/tools,readonly \
+    mkdir -p /app/assets/tools && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
+      cp -r /ctx/tools/x64 /app/assets/tools/x64; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+      cp -r /ctx/tools/arm /app/assets/tools/arm; \
+    fi && \
+    chmod +x /app/assets/tools/*/postgresql/*/bin/* \
+             /app/assets/tools/*/mysql/*/bin/* \
+             /app/assets/tools/*/mariadb/*/bin/* \
+             /app/assets/tools/*/mongodb/bin/*
 
 # Create postgres user and set up directories
 RUN groupadd -g 999 postgres || true && \
   useradd -m -s /bin/bash -u 999 -g 999 postgres || true && \
   mkdir -p /databasus-data/pgdata && \
   chown -R postgres:postgres /databasus-data/pgdata
+
+# Create non-root user for the main application process
+RUN useradd -r -s /usr/sbin/nologin -u 65532 databasus
 
 WORKDIR /app
 
@@ -265,13 +184,11 @@ COPY frontend/cloud-root-content.html /app/cloud-root-content.html
 # at GET /api/v1/system/agent?arch=amd64|arm64
 COPY --from=agent-build /agent-binaries ./agent-binaries
 
-# Copy .env file (with fallback to .env.production.example)
-COPY backend/.env* /app/
-RUN if [ ! -f /app/.env ]; then \
-  if [ -f /app/.env.production.example ]; then \
-  cp /app/.env.production.example /app/.env; \
-  fi; \
-  fi
+# Bake .env.example as /.env so the binary has defaults when no env file is
+# mounted. The backend looks for .env at the parent of cwd (= /app), i.e. /.
+# Real env vars (-e, compose, k8s) take precedence — godotenv.Load does not
+# overwrite already-set variables.
+COPY .env.example /.env
 
 # Create startup script
 COPY <<EOF /app/start.sh
@@ -380,7 +297,12 @@ echo "Setting up data directory permissions..."
 mkdir -p /databasus-data/pgdata
 mkdir -p /databasus-data/temp
 mkdir -p /databasus-data/backups
-chown -R postgres:postgres /databasus-data
+chown databasus:databasus /databasus-data
+chown -R postgres:postgres /databasus-data/pgdata
+chown -R databasus:databasus /databasus-data/temp /databasus-data/backups
+# Upgrade path: secret.key and instance.json may be owned by root or postgres
+# from older images. Re-own them so the non-root main process can read/write.
+chown databasus:databasus /databasus-data/secret.key /databasus-data/instance.json 2>/dev/null || true
 chmod 700 /databasus-data/temp
 
 # ========= Start Valkey (internal cache) =========
@@ -529,7 +451,7 @@ if [ -n "\${DANGEROUS_VALKEY_HOST:-}" ]; then
     echo ""
 fi
 
-exec ./main
+exec gosu databasus ./main
 EOF
 
 LABEL org.opencontainers.image.source="https://github.com/databasus/databasus"

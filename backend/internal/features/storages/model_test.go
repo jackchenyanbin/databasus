@@ -21,7 +21,6 @@ import (
 	"databasus-backend/internal/config"
 	azure_blob_storage "databasus-backend/internal/features/storages/models/azure_blob"
 	ftp_storage "databasus-backend/internal/features/storages/models/ftp"
-	google_drive_storage "databasus-backend/internal/features/storages/models/google_drive"
 	local_storage "databasus-backend/internal/features/storages/models/local"
 	nas_storage "databasus-backend/internal/features/storages/models/nas"
 	rclone_storage "databasus-backend/internal/features/storages/models/rclone"
@@ -194,28 +193,6 @@ acl = private`, s3Container.accessKey, s3Container.secretKey, s3Container.endpoi
 				RemotePath: s3Container.bucketName,
 			},
 		},
-	}
-
-	// Add Google Drive storage test only if environment variables are available
-	env := config.GetEnv()
-	if env.IsSkipExternalResourcesTests {
-		t.Log("Skipping Google Drive storage test: IS_SKIP_EXTERNAL_RESOURCES_TESTS=true")
-	} else if env.TestGoogleDriveClientID != "" && env.TestGoogleDriveClientSecret != "" &&
-		env.TestGoogleDriveTokenJSON != "" {
-		testCases = append(testCases, struct {
-			name    string
-			storage StorageFileSaver
-		}{
-			name: "GoogleDriveStorage",
-			storage: &google_drive_storage.GoogleDriveStorage{
-				StorageID:    uuid.New(),
-				ClientID:     env.TestGoogleDriveClientID,
-				ClientSecret: env.TestGoogleDriveClientSecret,
-				TokenJSON:    env.TestGoogleDriveTokenJSON,
-			},
-		})
-	} else {
-		t.Log("Skipping Google Drive storage test: missing environment variables")
 	}
 
 	for _, tc := range testCases {
@@ -413,6 +390,69 @@ func validateEnvVariables(t *testing.T) {
 	assert.NotEmpty(t, env.TestMinioPort, "TEST_MINIO_PORT is empty")
 	assert.NotEmpty(t, env.TestAzuriteBlobPort, "TEST_AZURITE_BLOB_PORT is empty")
 	assert.NotEmpty(t, env.TestNASPort, "TEST_NAS_PORT is empty")
+}
+
+func Test_RcloneStorage_DeleteFile_WhenAuthFailsOnLookup_ReturnsErrorAndDoesNotDeleteObject(t *testing.T) {
+	ctx := t.Context()
+
+	validateEnvVariables(t)
+
+	s3Container, err := setupS3Container(ctx)
+	require.NoError(t, err)
+
+	minioClient, err := minio.New(s3Container.endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(s3Container.accessKey, s3Container.secretKey, ""),
+		Secure: false,
+		Region: s3Container.region,
+	})
+	require.NoError(t, err)
+
+	fileID := uuid.New().String()
+	testData := []byte("rclone delete bug repro")
+
+	_, err = minioClient.PutObject(
+		ctx,
+		s3Container.bucketName,
+		fileID,
+		bytes.NewReader(testData),
+		int64(len(testData)),
+		minio.PutObjectOptions{},
+	)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_ = minioClient.RemoveObject(
+			context.Background(),
+			s3Container.bucketName,
+			fileID,
+			minio.RemoveObjectOptions{},
+		)
+	})
+
+	rcloneStorage := &rclone_storage.RcloneStorage{
+		StorageID: uuid.New(),
+		ConfigContent: fmt.Sprintf(`[minio]
+type = s3
+provider = Other
+access_key_id = %s
+secret_access_key = totally-wrong-secret-key
+endpoint = http://%s
+acl = private`, s3Container.accessKey, s3Container.endpoint),
+		RemotePath: s3Container.bucketName,
+	}
+
+	encryptor := encryption.GetFieldEncryptor()
+
+	err = rcloneStorage.DeleteFile(encryptor, fileID)
+	require.Error(t, err)
+
+	_, statErr := minioClient.StatObject(
+		ctx,
+		s3Container.bucketName,
+		fileID,
+		minio.StatObjectOptions{},
+	)
+	assert.NoError(t, statErr)
 }
 
 func Test_StorageUpdate_WhenExistingStorageHasNilS3_AssignsIncomingS3(t *testing.T) {

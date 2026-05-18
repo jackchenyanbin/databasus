@@ -12,7 +12,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"databasus-backend/internal/config"
 	"databasus-backend/internal/util/tools"
@@ -79,7 +78,7 @@ func Test_TestConnection_PasswordContainingSpaces_TestedSuccessfully(t *testing.
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	err = pgModel.TestConnection(logger, nil, uuid.New())
+	err = pgModel.TestConnection(logger, nil)
 	assert.NoError(t, err)
 }
 
@@ -149,7 +148,7 @@ func Test_TestConnection_InsufficientPermissions_ReturnsError(t *testing.T) {
 
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-			err = pgModel.TestConnection(logger, nil, uuid.New())
+			err = pgModel.TestConnection(logger, nil)
 			assert.Error(t, err)
 			if err != nil {
 				assert.Contains(t, err.Error(), "insufficient permissions")
@@ -236,7 +235,7 @@ func Test_TestConnection_SufficientPermissions_Success(t *testing.T) {
 
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-			err = pgModel.TestConnection(logger, nil, uuid.New())
+			err = pgModel.TestConnection(logger, nil)
 			assert.NoError(t, err)
 		})
 	}
@@ -268,7 +267,7 @@ func Test_IsUserReadOnly_AdminUser_ReturnsFalse(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			ctx := t.Context()
 
-			isReadOnly, privileges, err := pgModel.IsUserReadOnly(ctx, logger, nil, uuid.New())
+			isReadOnly, privileges, err := pgModel.IsUserReadOnly(ctx, logger, nil)
 			assert.NoError(t, err)
 			assert.False(t, isReadOnly, "Admin user should not be read-only")
 			assert.NotEmpty(t, privileges, "Admin user should have privileges")
@@ -295,7 +294,7 @@ func Test_IsUserReadOnly_ReadOnlyUser_ReturnsTrue(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	ctx := t.Context()
 
-	username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil, uuid.New())
+	username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil)
 	assert.NoError(t, err)
 
 	readOnlyModel := &PostgresqlDatabase{
@@ -309,7 +308,7 @@ func Test_IsUserReadOnly_ReadOnlyUser_ReturnsTrue(t *testing.T) {
 		CpuCount: 1,
 	}
 
-	isReadOnly, privileges, err := readOnlyModel.IsUserReadOnly(ctx, logger, nil, uuid.New())
+	isReadOnly, privileges, err := readOnlyModel.IsUserReadOnly(ctx, logger, nil)
 	assert.NoError(t, err)
 	assert.True(t, isReadOnly, "Read-only user should be read-only")
 	assert.Empty(t, privileges, "Read-only user should have no write privileges")
@@ -360,7 +359,7 @@ func Test_CreateReadOnlyUser_UserCanReadButNotWrite(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			ctx := t.Context()
 
-			username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil, uuid.New())
+			username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, username)
 			assert.NotEmpty(t, password)
@@ -380,7 +379,6 @@ func Test_CreateReadOnlyUser_UserCanReadButNotWrite(t *testing.T) {
 				ctx,
 				logger,
 				nil,
-				uuid.New(),
 			)
 			assert.NoError(t, err)
 			assert.True(t, isReadOnly, "Created user should be read-only")
@@ -439,7 +437,7 @@ func Test_ReadOnlyUser_FutureTables_HaveSelectPermission(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	ctx := t.Context()
 
-	username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil, uuid.New())
+	username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil)
 	assert.NoError(t, err)
 
 	_, err = container.DB.Exec(`
@@ -492,7 +490,7 @@ func Test_ReadOnlyUser_MultipleSchemas_AllAccessible(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	ctx := t.Context()
 
-	username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil, uuid.New())
+	username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil)
 	assert.NoError(t, err)
 
 	readOnlyDSN := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
@@ -567,7 +565,7 @@ func Test_CreateReadOnlyUser_DatabaseNameWithDash_Success(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	ctx := t.Context()
 
-	username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil, uuid.New())
+	username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, username)
 	assert.NotEmpty(t, password)
@@ -595,117 +593,6 @@ func Test_CreateReadOnlyUser_DatabaseNameWithDash_Success(t *testing.T) {
 
 	_, err = dashDB.Exec(fmt.Sprintf(`DROP USER IF EXISTS "%s"`, username))
 	assert.NoError(t, err)
-}
-
-func Test_CreateReadOnlyUser_Supabase_UserCanReadButNotWrite(t *testing.T) {
-	if config.GetEnv().IsSkipExternalResourcesTests {
-		t.Skip("Skipping Supabase test: IS_SKIP_EXTERNAL_RESOURCES_TESTS is true")
-	}
-
-	env := config.GetEnv()
-
-	if env.TestSupabaseHost == "" {
-		t.Skip("Skipping Supabase test: missing environment variables")
-	}
-
-	portInt, err := strconv.Atoi(env.TestSupabasePort)
-	assert.NoError(t, err)
-
-	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=require",
-		env.TestSupabaseHost,
-		portInt,
-		env.TestSupabaseUsername,
-		env.TestSupabasePassword,
-		env.TestSupabaseDatabase,
-	)
-
-	adminDB, err := sqlx.Connect("postgres", dsn)
-	require.NoError(t, err)
-	defer adminDB.Close()
-
-	tableName := fmt.Sprintf(
-		"readonly_test_%s",
-		strings.ReplaceAll(uuid.New().String()[:8], "-", ""),
-	)
-	_, err = adminDB.Exec(fmt.Sprintf(`
-		DROP TABLE IF EXISTS public.%s CASCADE;
-		CREATE TABLE public.%s (
-			id SERIAL PRIMARY KEY,
-			data TEXT NOT NULL
-		);
-		INSERT INTO public.%s (data) VALUES ('test1'), ('test2');
-	`, tableName, tableName, tableName))
-	assert.NoError(t, err)
-
-	defer func() {
-		_, _ = adminDB.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS public.%s CASCADE`, tableName))
-	}()
-
-	pgModel := &PostgresqlDatabase{
-		Host:     env.TestSupabaseHost,
-		Port:     portInt,
-		Username: env.TestSupabaseUsername,
-		Password: env.TestSupabasePassword,
-		Database: &env.TestSupabaseDatabase,
-		IsHttps:  true,
-	}
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	ctx := t.Context()
-
-	connectionUsername, newPassword, err := pgModel.CreateReadOnlyUser(ctx, logger, nil, uuid.New())
-	assert.NoError(t, err)
-	assert.NotEmpty(t, connectionUsername)
-	assert.NotEmpty(t, newPassword)
-	assert.True(t, strings.HasPrefix(connectionUsername, "databasus-"))
-
-	baseUsername := connectionUsername
-	if idx := strings.Index(connectionUsername, "."); idx != -1 {
-		baseUsername = connectionUsername[:idx]
-	}
-
-	defer func() {
-		_, _ = adminDB.Exec(fmt.Sprintf(`DROP OWNED BY "%s" CASCADE`, baseUsername))
-		_, _ = adminDB.Exec(fmt.Sprintf(`DROP USER IF EXISTS "%s"`, baseUsername))
-	}()
-
-	readOnlyDSN := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=require",
-		env.TestSupabaseHost,
-		portInt,
-		connectionUsername,
-		newPassword,
-		env.TestSupabaseDatabase,
-	)
-	readOnlyConn, err := sqlx.Connect("postgres", readOnlyDSN)
-	assert.NoError(t, err)
-	defer readOnlyConn.Close()
-
-	var count int
-	err = readOnlyConn.Get(&count, fmt.Sprintf("SELECT COUNT(*) FROM public.%s", tableName))
-	assert.NoError(t, err)
-	assert.Equal(t, 2, count)
-
-	_, err = readOnlyConn.Exec(
-		fmt.Sprintf("INSERT INTO public.%s (data) VALUES ('should-fail')", tableName),
-	)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "permission denied")
-
-	_, err = readOnlyConn.Exec(
-		fmt.Sprintf("UPDATE public.%s SET data = 'hacked' WHERE id = 1", tableName),
-	)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "permission denied")
-
-	_, err = readOnlyConn.Exec(fmt.Sprintf("DELETE FROM public.%s WHERE id = 1", tableName))
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "permission denied")
-
-	_, err = readOnlyConn.Exec("CREATE TABLE public.hack_table (id INT)")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "permission denied")
 }
 
 func Test_CreateReadOnlyUser_WithPublicSchema_Success(t *testing.T) {
@@ -744,7 +631,7 @@ func Test_CreateReadOnlyUser_WithPublicSchema_Success(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			ctx := t.Context()
 
-			username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil, uuid.New())
+			username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, username)
 			assert.NotEmpty(t, password)
@@ -764,7 +651,6 @@ func Test_CreateReadOnlyUser_WithPublicSchema_Success(t *testing.T) {
 				ctx,
 				logger,
 				nil,
-				uuid.New(),
 			)
 			assert.NoError(t, err)
 			assert.True(t, isReadOnly, "User should be read-only")
@@ -852,7 +738,7 @@ func Test_CreateReadOnlyUser_WithoutPublicSchema_Success(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			ctx := t.Context()
 
-			username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil, uuid.New())
+			username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil)
 			assert.NoError(t, err, "CreateReadOnlyUser should succeed without public schema")
 			assert.NotEmpty(t, username)
 			assert.NotEmpty(t, password)
@@ -872,7 +758,6 @@ func Test_CreateReadOnlyUser_WithoutPublicSchema_Success(t *testing.T) {
 				ctx,
 				logger,
 				nil,
-				uuid.New(),
 			)
 			assert.NoError(t, err)
 			assert.True(t, isReadOnly, "User should be read-only")
@@ -1019,7 +904,7 @@ func Test_CreateReadOnlyUser_PublicSchemaExistsButNoPermissions_ReturnsError(t *
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			ctx := t.Context()
 
-			username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil, uuid.New())
+			username, password, err := pgModel.CreateReadOnlyUser(ctx, logger, nil)
 			assert.Error(
 				t,
 				err,
@@ -1440,7 +1325,6 @@ func Test_CreateReadOnlyUser_TablesCreatedByDifferentUser_ReadOnlyUserCanRead(t 
 		ctx,
 		logger,
 		nil,
-		uuid.New(),
 	)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, readonlyUsername)
@@ -1524,13 +1408,13 @@ func Test_CreateReadOnlyUser_WithIncludeSchemas_OnlyGrantsAccessToSpecifiedSchem
 		DROP SCHEMA IF EXISTS excluded_schema CASCADE;
 		CREATE SCHEMA included_schema;
 		CREATE SCHEMA excluded_schema;
-		
+
 		CREATE TABLE public.public_table (id INT, data TEXT);
 		INSERT INTO public.public_table VALUES (1, 'public_data');
-		
+
 		CREATE TABLE included_schema.included_table (id INT, data TEXT);
 		INSERT INTO included_schema.included_table VALUES (2, 'included_data');
-		
+
 		CREATE TABLE excluded_schema.excluded_table (id INT, data TEXT);
 		INSERT INTO excluded_schema.excluded_table VALUES (3, 'excluded_data');
 	`)
@@ -1590,7 +1474,7 @@ func Test_CreateReadOnlyUser_WithIncludeSchemas_OnlyGrantsAccessToSpecifiedSchem
 	_, err = userCreatorConn.Exec(`
 		CREATE TABLE included_schema.user_table (id INT, data TEXT);
 		INSERT INTO included_schema.user_table VALUES (4, 'user_included_data');
-		
+
 		CREATE TABLE excluded_schema.user_excluded_table (id INT, data TEXT);
 		INSERT INTO excluded_schema.user_excluded_table VALUES (5, 'user_excluded_data');
 	`)
@@ -1607,7 +1491,6 @@ func Test_CreateReadOnlyUser_WithIncludeSchemas_OnlyGrantsAccessToSpecifiedSchem
 		ctx,
 		logger,
 		nil,
-		uuid.New(),
 	)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, readonlyUsername)
@@ -1696,6 +1579,31 @@ func Test_CreateReadOnlyUser_WithIncludeSchemas_OnlyGrantsAccessToSpecifiedSchem
 		"permission denied",
 		"Read-only user should NOT access tables in excluded schemas",
 	)
+}
+
+func Test_GetRawDbSizeMb_Postgresql_ReturnsPositiveSize(t *testing.T) {
+	env := config.GetEnv()
+	container := connectToPostgresContainer(t, env.TestPostgres16Port)
+	defer container.DB.Close()
+
+	tableName := fmt.Sprintf("size_test_%s", uuid.New().String()[:8])
+	_, err := container.DB.Exec(fmt.Sprintf(`
+		CREATE TABLE %s (id SERIAL PRIMARY KEY, payload TEXT NOT NULL);
+		INSERT INTO %s (payload) SELECT repeat('x', 1024) FROM generate_series(1, 10000);
+	`, tableName, tableName))
+	assert.NoError(t, err)
+	defer func() {
+		_, _ = container.DB.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName))
+	}()
+
+	pgModel := createPostgresModel(container)
+	assert.NotNil(t, pgModel)
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	sizeMB, err := pgModel.GetRawDbSizeMb(t.Context(), logger, nil)
+	assert.NoError(t, err)
+	assert.Greater(t, sizeMB, 0.0, "raw db size should be > 0 after inserting data")
 }
 
 func connectToPostgresContainer(t *testing.T, port string) *PostgresContainer {

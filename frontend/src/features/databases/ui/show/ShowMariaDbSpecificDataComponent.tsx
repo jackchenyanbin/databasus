@@ -65,6 +65,13 @@ export const ShowMariaDbSpecificDataComponent = ({ database }: Props) => {
           <div>{t('common.yes')}</div>
         </div>
       )}
+
+      {!!database.mariadb?.excludeTables?.length && (
+        <div className="mb-1 flex w-full items-center">
+          <div className="min-w-[150px]">Exclude tables</div>
+          <div>{database.mariadb.excludeTables.join(', ')}</div>
+        </div>
+      )}
     </div>
   );
 };
